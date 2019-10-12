@@ -1,0 +1,939 @@
+********** SPL 1.7 Alpha 1 **********
+===== Build 0094 2019/06/19 =====
+
+* New syntax:
+    * New keyword "keyword", used to define new keywords
+    * Added an unary operator for String "run"
+* Redesigned unary operator evaluate system
+* Bug fixes:
+    * Fixed that visualizer recognized a wrong spl script dir
+    * Fixed a potential bug that the lexer was using "find" instead of "rfind" to locate the script dir
+    * Fixed that the "lang.sp" was automatically nested imported in importing files
+    * Fixed that the import node might misled the parser to recognize a module brace into a set creation
+
+********** SPL 1.6.3 **********
+===== Build 0093 2019/05/18 =====
+
+* New annotation system:
+    * Annotations now supports parameters
+* Library updates:
+    * unittest.sp:
+        * Tests now supports expecting specific exception
+* Native classes updates:
+    * Added method Set.get():
+        * Naively gets an item from a set
+
+********** SPL 1.6.2 **********
+===== Build 0092 2019/05/17 =====
+
+* Library updates:
+    * math.sp:
+        * Added functions 'fact(x)', 'perm(n, k)', 'comb(n, k)'
+
+********** SPL 1.6.1 **********
+===== Build 0091 2019/05/11 =====
+
+* Bug fixes:
+    * Import error when script directory is the current working directory
+
+********** SPL 1.6 Release **********
+===== Build 0090 2019/05/08 =====
+
+* Provided a native way to throw an exception defined in lang.sp
+* Importing a namespace will now imports all namespaces of the imported namespace
+* Bug fixes:
+    * Increment/Decrement operator identification
+    * Console did not import 'lang.sp'
+
+********** SPL 1.6 Release Candidate 2 **********
+===== Build 0089 2019/05/07 =====
+
+* Moved class 'StringBuilder' from string_builder.sp to util.sp
+* Added new library json.sp
+* Functional updates:
+    * Hidden function __kw_unpack__
+* Bug fixes:
+    * StringBuilder.to_string() generates error
+    * Re-declare warning shows at wrong time
+    * return {...} misidentified as a block statement
+
+********** SPL 1.6 Release Candidate **********
+===== Build 0088 2019/05/06 =====
+
+* Added some docstrings
+
+********** SPL 1.6 Beta 12 **********
+===== Build 0087 2019/05/06 =====
+
+* New built-in function:
+    * id()
+* Bug fixes:
+    * instanceof not work for python types
+    * string() not work for classes with __str__ not defined
+    * memory_view() recurse infinitely to circular references
+
+********** SPL 1.6 Beta 11 **********
+===== Build 0086 2019/05/05 =====
+
+* Added the error traceback of eval()
+
+********** SPL 1.6 Beta 10 **********
+===== Build 0085 2019/05/04 =====
+
+* SGL updates
+* IDLE Updates
+* Error traceback now printed to system.stderr
+
+********** SPL 1.6 Beta 9 **********
+===== Build 0084 2019/05/04 =====
+
+* Change the NativeType 'List' to 'Array'
+* Added new native function 'array()'
+* Implemented 'List' in SPL, in lang.sp
+* Functional updates:
+    * SPL object __iter__ can now return a native iterable object
+    * Hidden function __unpack__
+* New native function:
+    * get_env()
+* New library:
+    * util.sp:
+        * memory_view()
+* New SGL widget:
+    * TreeView
+* Bug fixes:
+    * Access of Class might be blocked by constructor in class
+
+********** SPL 1.6 Beta 8 **********
+===== Build 0083 2019/05/03 =====
+
+* Optimized function call
+* Updated native function help():
+    * Changed the output of 'help' to system.stdout
+    * Added the help for module
+
+********** SPL 1.6 Beta 7 **********
+===== Build 0082 2019/05/02 =====
+
+* Structural optimization:
+    * Moved all spl *.py files into /bin
+    * Added a new function checking the spl path
+* Updated idle.sp
+
+********** SPL 1.6 Beta 6 **********
+===== Build 0081 2019/05/02 =====
+
+* Updated native functions:
+    * input()
+* spl lib updates:
+    * io.sp: added spl based IOException
+    * sgl.sp: Menus
+* Bug fixes:
+    * try-catch block could not catch Exception from modules
+
+********** SPL 1.6 Beta 5 **********
+===== Build 0080 2019/05/02 =====
+
+* Change in system:
+    * stdout, stderr, stdin are now SPL Objects, which is initialized in lang.sp
+* Native function re-implementation:
+    * main() and eval()
+* Spl lib updates:
+    * sgl.sp
+    * io.sp
+* Update idle
+
+********** SPL 1.6 Beta 4 **********
+===== Build 0079 2019/05/01 =====
+
+* New syntax:
+    * New binary operator 'subclassof'
+    * Constructor.clazz
+    * Native object initialization via operator 'new'
+    * Native object method call and native function call now supports *args and **kwargs
+* Nre library:
+    * SPL Graphics Library (sgl.sp)
+* New tool:
+    * SPL IDLE (early development version)
+* Added some type check:
+    * The object used by keyword 'throw' must be derived from Exception
+    * Catching exception must be an exception
+* Added new command-line flag:
+    * -ni, --noimport, do not import lib.lang.sp automatically
+* Structural optimization:
+    * Moved some tools into /bin directory
+* Bug fixes:
+    * Fixed that try-catch block would cause error if the exception thrown is an spl exception, but the expecting
+        exception is a python exception
+    * Fixed that console and eval() did not work, due to problem in import
+    * Fixed that eval() only take one line
+    * Fixed that imported iterable class without namespace caused error when used in for-each loop
+    * Fixed that parser might misidentify reserved names as function names (e.g "return (1 + 2)")
+
+********** SPL 1.6 Beta 3 **********
+===== Build 0078 2019/04/28 =====
+
+* Created 'lang.sp' which will be automatically imported
+* Optimizes on native functions dir() and help():
+    * These functions now work on native type itself, not instance of native object
+* Created new parser tool:
+    * Graphical abstract syntax tree visualizer
+* Optimization:
+    * Duplicated import from a same file now will not be imported again
+* Bug fixes:
+    * Fixed that classes with the same name could be identified as same classes
+
+********** SPL 1.6 Alpha 6 **********
+===== Build 0077 2019/04/28 =====
+
+* Completely redesigned the module-import system:
+    * The modules are now separated
+    * New keyword 'namespace'
+    * New keyword 'as'
+* Optimized the Environment's
+* Changed keyword 'new' into an unary operator
+* Changed the mechanism of class extensions
+* Removed the class initialization optimization
+
+********** SPL 1.6 Beta 2 **********
+===== Build 0076 2019/04/25 =====
+
+* Math library updates:
+    * Added more functions
+* Unittest library updates:
+    * Added new annotations "@RunBefore" and "@RunAfter"
+* Bug fixes:
+    * Fixed that further operation over native exception in try-catch statement causes error
+* Optimization:
+    * Discarded self-returning table
+    * Removed all "extra_precedence" in parser
+
+********** SPL 1.6 Beta 1 **********
+===== Build 0075 2019/04/23 =====
+
+* Console updates:
+    * A blank line will break the console now
+* New syntax:
+    * Constant in class now can be initialize in constructor function
+* Major redesign of parser:
+    * Changed the working method of parenthesises
+* Changed the mechanism of for-each loop:
+    * New superclass 'Iterator'
+    * Changed 'Iterable':
+        * __iter__ function now returns an 'Iterator'
+        * __next__ function now removed
+* Bug fixes:
+    * Multiple variable declaration in one line
+    * Could not start console
+
+********** SPL 1.6 Alpha 5 **********
+===== Build 0074 2019/04/23 =====
+
+* New syntax:
+    * ~[elements...] to create immutable list
+* Optimization:
+    * Changed the class method creation time from instantiating time to class creation time
+* Added new runtime check:
+    * Attribute assignment for non-spl Objects
+* Bug fixes:
+    * The assignment dot chain would not work if there are mixes of attributes and function calls
+
+********** SPL 1.6 Alpha 4 **********
+===== Build 0073 2019/04/23 =====
+
+* Added new runtime check:
+    * Heap object assignment duplicate check
+    * Immutable list for *args
+* Bug fixes:
+    * Fixed that *args and **kwargs not working properly
+
+********** SPL 1.6 Alpha 3 **********
+===== Build 0072 2019/04/20 =====
+
+* Added built-in function:
+    * exec()
+* Bug fixes:
+    * Fixed that the spl might not find the interpreter path
+
+********** SPL 1.6 Alpha 2 **********
+===== Build 0071 2019/04/19 =====
+
+* Bug fixes:
+    * Fixed that setitem causing error in loop
+* Optimizations:
+    * Optimized the function call evaluator
+
+********** SPL 1.6 Alpha 1 **********
+===== Build 0070 2019/04/18 =====
+
+* Added portable list, pair, set creation:
+    * List creation with [a, b, c]
+    * Pair creation with {a = x, b = y, c = z}
+    * Set creation with {a, b, c}
+* Bug fixes:
+    * Fixed that getitem and setitem not working properly
+* Optimizations:
+    * Optimized codes in parser
+
+********** SPL 1.5.2 **********
+===== Build 0069 2019/04/17 =====
+
+* Unittest updates:
+    * Unittest module now prints out the failed test to stderr
+* Bug fixes:
+    * The key type of returning pair of native.variables() is python native str
+
+********** SPL 1.5.1 **********
+===== Build 0068 2019/04/17 =====
+
+* Make the Function a SPL object
+* Added the access from SPL code to python instance
+* Changed the annotations from dictionary to spl Set
+* Changed the mechanism of string and print
+* Bug fixes:
+    * if-else without braces
+
+********** SPL 1.5 Release **********
+===== Build 0067 2019/04/14 =====
+
+* Changed the type name of system, os, and natives to UpperCamel
+
+********** SPL 1.5 Release Candidate 3 **********
+===== Build 0066 2019/04/13 =====
+
+* Bug fixes:
+    * Fixed the file directory problem
+    * Fixed the bug that operator 'instanceof' returns false for all native types
+* Interpreter code optimization:
+    * Set the '__' suffix as the signal of spl internal method
+    * Change the native types' type_name() to @classmethod type_name__()
+
+********** SPL 1.5 Release Candidate 2 **********
+===== Build 0065 2019/04/13 =====
+
+* Bug fixes:
+    * Fixed the unknown docstring from native types
+    * Fixed that the file reader takes wrong type of string
+* Interpreter code optimization:
+    * Optimized the invoke of static method in native types
+
+********** SPL 1.5 Beta 4 **********
+===== Build 0064 2019/04/13 =====
+
+* New syntax:
+    * Assignment now be treated the same as any other binary expressions
+* Redesign the parser on the function build system
+* New functions in "math":
+    * gcd(x, y)
+    * log(x, base) which returns the logarithm
+* Implemented the help function on native objects
+
+********** SPL 1.5 Release Candidate **********
+===== Build 0063 2019/04/12 =====
+
+* Added more parse-time check
+* Bug fixes:
+    * For-each loop not working on spl iterable classes
+
+********** SPL 1.5 Beta 3 **********
+===== Build 0062 2019/04/11 =====
+
+* Implemented help system:
+    * The native function 'help' now works
+* Bug fixes:
+    * The catch statement could not catch specified exceptions thrown by spl interpreter
+    * The reference counter would not set back as needed when there are nested class instantiation
+
+********** SPL 1.5 Beta 2 **********
+===== Build 0061 2019/04/10 =====
+
+* New syntax:
+    * Increment and decrement operator '++', '--'
+* Performance optimization:
+    * Optimized the performance of evaluation-assignment expression (like '+=')
+    * Optimized boolean value and null
+    * Loop speed increased for about 20%
+
+********** SPL 1.5 Beta 1 **********
+===== Build 0060 2019/04/10 =====
+
+* Function changes:
+    * The 'StringBuilder.append' method now returns the object itself
+    * The 'Thread' constructor now take the target itself
+* New interpreter options:
+    * Save and load linked spl file as '.lsp'
+    * Full command line options started by '--'
+* Bug fixes:
+    * Name 'Object' is now forbidden for class names
+
+********** SPL 1.5 Alpha 4 **********
+===== Build 0059 2019/04/09 =====
+
+* Performance optimization:
+    * Removed the cwf updates in every evaluation:
+        * Increase execution speed for about 19%
+* Bug fixes:
+    * Fixed that the parser did not recognize type notation ':'
+    * Fixed that binary expressions sometimes not linked
+
+********** SPL 1.5 Alpha 3 **********
+===== Build 0058 2019/04/09 =====
+
+* New syntax:
+    * Anonymous call operator '=>' is deprecated
+    * Builder structure now works in SPL
+* Structural optimization:
+    * Changed the method of calling a function
+* Bug fixes:
+    * Directly return an inner function inside function did not work
+
+********** SPL 1.5 Alpha 2 **********
+===== Build 0057 2019/04/06 =====
+
+* New syntax:
+    * Ternary operator:
+        * Conditional operator: "cond ? if_true : if_false"
+* Import optimization:
+    * The duplicate import will now not be executed
+* Performance optimization:
+    * Optimized variable scopes:
+        * Increase execution speed for about 33%
+
+********** SPL 1.5 Alpha 1 **********
+===== Build 0056 2019/04/01 =====
+
+* Abandoned less-useful features:
+    * Strong type annotation
+    * Array
+    * Manual memory management
+* Optimization:
+    * Removed spl_optimizer
+    * Deleted the intermediate abstract syntax tree node of numbers
+* New syntax:
+    * Custom unary operators for spl classes
+    * Custom indexing for spl classes
+* Bug fixes:
+    * Exception caught is not accessible
+
+********** SPL 1.4 Beta 4 **********
+===== Build 0055 2019/03/21 =====
+
+*Added support for strong type notation
+*Every spl objects now extend the class 'Object'
+*Bug fixes:
+    *Fixed that the optimizer causes error since build 0053
+
+********** SPL 1.4 Beta 3 **********
+===== Build 0054 2019/03/18 =====
+
+*Added some documents
+*Variable scope modification:
+    *Duplicate variable in different main scope is allowed.
+
+********** SPL 1.4 Beta 2 **********
+===== Build 0053 2019/03/17 =====
+
+*Structural optimization:
+    *Merged unary operator types in abstract syntax tree
+*Functionality augmentation:
+    *Interpreter option file
+*Garbage collector update:
+    *Garbage collector now works automatically
+*Added keyword "del": manually free a pointer
+*Bug fixes:
+    *Garbage collector will not collect pointers in array now
+
+********** SPL 1.4 Beta 1 **********
+===== Build 0052 2019/03/16 =====
+
+*Pointer implemented
+*Float array implemented
+*Bug fixes:
+    *Garbage collector id-allocate system
+
+********** SPL 1.4 Alpha 6 **********
+===== Build 0051 2019/03/13 =====
+
+*Garbage collector updates:
+    *Used set instead of dict
+*Tool implementation:
+    *statistics
+
+********** SPL 1.4 Alpha 5 **********
+===== Build 0050 2019/03/12 =====
+
+*Functions changes:
+    *'set' now take initial values
+*Reference framework changes:
+    *Instances and NativeTypes are stored in memory, pointers are passed through
+    *Implemented array types
+    *Garbage collector
+
+********** SPL 1.4 Alpha 4 **********
+===== Build 0049 2019/03/09 =====
+
+*Added syntax:
+    *'and', 'or', 'is', 'not' to increase readability
+    *'pair' now take initial values
+*Optimization:
+    *Replaced some if-elif-else with cases table
+
+********** SPL 1.4 Alpha 3 **********
+===== Build 0048 2019/03/07 =====
+
+*Added call to *args and **kwargs
+*Added syntax:
+    *Keyword 'assert'
+
+********** SPL 1.4 Alpha 2 **********
+===== Build 0047 2019/03/07 =====
+
+*Added syntax:
+    *Unpack operator: *args, **kwargs
+*Bug fixes:
+    *spl type iterable argument error
+    *String hash inside Pair
+
+********** SPL 1.4 Alpha 1 **********
+===== Build 0046 2019/03/07 =====
+
+*String.format
+*Basic multi-threading
+*Rework on parser, better nested support
+*Native function: system.sleep
+
+********** SPL 1.3.2 **********
+===== Build 0045 2019/03/06 =====
+
+*Supports updates:
+    *Release notes
+
+********** SPL 1.3.1 **********
+===== Build 0044 2019/03/06 =====
+
+*Function implementations:
+    *List.sublist
+    *String.substring
+    *StringBuilder.substring
+*Bug fixes:
+    *Fixed bug that tail-call optimization may misidentify functions
+
+#####################################
+##         SPL 1.3 Release         ##
+#####################################
+
+*** New Features ***
+
+*Syntax changes:
+    *Removed local-variable keyword 'let'
+    *Keyword 'abstract' now works as a quantifier of definition keywords 'class' and 'function'
+    *Tags tagged by '@' are implemented:
+        @Override
+        @Suppress
+*Rework on the function parameter system:
+    *Default parameter now can contain expressions
+    *Keyword argument supports
+*Functionality augment:
+    *Functions 'print' and 'println' are accessible to both stdout and stderr
+*New library class:
+    *StringBuilder
+*Optimizations:
+    *Performance optimization: comparing to SPL 1.2:
+        *loops are 22% faster
+        *recursions are 45% faster
+    *Structural reorganization:
+        *Deleted spl coder stuff
+*Bugs fixes:
+    *Fixed some long-existing bugs
+
+===== Build 0043: 2019/03/06 =====
+*Bug fixes:
+    *Fixed that console does not work
+*Code optimizations:
+    *Deleted some unused codes
+
+********** SPL 1.3 Beta 1 **********
+===== Build 0042: 2019/03/06 =====
+
+*Optimizations:
+    *Optimized performance for about 20%
+    *Moved non-environment dependent classes and functions to spl_lib
+*Modified built-in libs to match the new spl syntax
+*Implemented tags marked with '@'
+*Updated 'print' function: place of output
+*Replaced 'InvalidToken' with 'InvalidArgument'
+*Added a new library class 'StringBuilder'
+*Flushes the stdout and stderr after process finished
+*Implemented the link of 'string()' and '__str__()' method
+
+********** SPL 1.3 Alpha 2 **********
+===== Build 0041: 2019/03/04 =====
+
+*Added syntax:
+    *Keyword arguments
+*Fixed a long-existing problem: cross-environment function call
+
+********** SPL 1.3 Alpha 1 **********
+===== Build 0040: 2019/03/03 =====
+
+*Function parameter changes:
+    *Default parameter now can contain expressions
+*Syntax changes:
+    *Removed local variable declaration 'let'
+    *Changed the functionality of keyword 'abstract'
+    *Implemented tag tagged by '@'
+    *Changed internal method from '@' to '__'
+*Object-id counter changes:
+    *Removed unnecessary cost of object id by function 'dir'
+    *Slightly changed the default to string method of object
+*File structure optimization:
+    *Removed spl coder
+    *Removed spl decompiler
+    *Removed spc and spd
+    *Separated Parser from tokenizer and AbstractSyntaxTree
+
+********** SPL 1.2 Release **********
+===== Build 0039: 2019/02/25 =====
+
+*Bug fixes:
+    *Fixed that doc file would not be deleted if program crashes
+
+********** SPL 1.2 Beta 7 **********
+===== Build 0037: 2019/02/24 =====
+
+*Updated console:
+    *Exception catch and multi-line input
+*Added native function:
+    *'exit'
+    *'help', still in experimental version
+*Performance optimization:
+    *Loop environment optimization
+
+********** SPL 1.2 Beta 6 **********
+===== Build 0036: 2019/02/24 =====
+
+*Added tool: code searcher
+*Updated math lib
+*Added native function:
+    *'getcwf' which returns the working script name
+    *'main' which returns true if the current working file is the main script
+
+********** SPL 1.2 Beta 5 **********
+===== Build 0035: 2019/02/23 =====
+
+*Updated spl-lib:
+    *Updated 'functions' and 'io'
+*Bug fixes:
+    *Changed the outer scope of a class instance from where the instance be created to where the class locates
+*Optimization:
+    *Sub-scope now not creating a '=>' mark
+
+********** SPL 1.2 Beta 4 **********
+===== Build 0034: 2019/02/23 =====
+
+*Added more debug information:
+    *Assigns now shows file and line number if error occurs
+*Scope updates:
+    *Added a inner scope of loop
+    *Re-added supports for function closure
+
+********** SPL 1.2 Beta 3 **********
+===== Build 0033: 2019/02/23 =====
+
+*Added block-scope environment
+*Re-organized status in environment
+*Canceled keyword 'private'
+*Updated built-in functions:
+    *Added function 'println'
+    *'print' now does not print a new line.
+
+********** SPL 1.2 Beta 2 **********
+===== Build 0032: 2019/02/23 =====
+
+*Bug fixes:
+    *Cross-scope function call
+    *Call function from a class method
+    *Bugs that caused by variable length temp vars
+
+********** SPL 1.2 Beta **********
+===== Build 0030: 2019/02/23 =====
+### Beta Version ###
+
+*No backward compatibility
+*Re-designed variable system:
+    *Added keyword 'var' for variable
+    *Added keyword 'let' for local variable
+*Added syntax:
+    *Multiple variable declaration in one line.
+*Optimization:
+    *Re-organized lexer and parser
+*Updated decompiler: spd alpha 2
+
+********** SPL 1.1.0 **********
+===== Build 0027: 2019/02/19 =====
+
+*New features:
+    *Added spc to produce the spl bytecode
+    *SPL bytecode interpreter
+    *Constant values, using keyword 'const'. Also supports for constant method of class
+*New experimental feature:
+    *SPL Decompiler: 'spd'
+*Bug fixes:
+    *Fixed that 'instanceof' not working properly when used inside class
+    *Fixed that unary operator '!' not properly implemented
+    *Fixed that function 'eval' returns the string itself
+    *Merged spl_interpreter and spl_lib to avoid cyclic import
+    *Fixed that using keyword 'this' cannot access to private attributes
+
+********** SPL 1.0.2 **********
+===== Build 0026: 2019/02/17 =====
+
+*Performance optimization:
+    *Interpreter:
+        *Replace if-else with case-lookup
+        *Removed wrapped boolean and null
+
+********** SPL 1.0.1 **********
+===== Build 0025: 2019/02/16 =====
+
+*Added command line options:
+    *-et for execution times of each nodes
+*Bug fixes:
+    *Some interpretation error caused by wrong type
+
+********** SPL 1.0.0 **********
+===== Build 0024: 2019/02/15 =====
+
+*Added syntax:
+    *for-each loop
+*Bug fixes:
+    *Fixed bug that catch block cannot catch native errors
+    *Fixed bug that finally block was not executed if return statement in try-catch block
+    *Added argument check for function call
+    *Fixed bug that name ended with digit may cause error
+*Added native function:
+    *dir
+*Added library function:
+    *reduce
+*Library implementation:
+    *Implemented queue.LinkedList
+*Structural change:
+    *Moved "Exception" to library
+*Optimization:
+    *Semicolon at the end of a block can be omitted
+    *Library functions optimization
+    *Used lazy evaluation for operators '&&' and '||'
+    *Added spl optimizer:
+        *level 1: ast leaf reduction
+        *level 2: tail recursion call optimization
+*Function not-implemented:
+    *SPL compiler
+    *SPL tree restorer
+    *SPL decompiler
+
+===== Build 0023: 2019/02/12 =====
+
+*Added syntax:
+    *try catch finally
+*Changed operator:
+    *instanceof
+*Performance optimization:
+    *Removed system variable wrappers
+
+===== Build 0022: 2019/02/10 =====
+
+*Performance optimization:
+    *Optimized interpreter, execution is now about 10% faster
+*Bug fixes:
+    *math.random crashes
+
+===== Build 0021: 2019/02/10 =====
+
+*Added syntax:
+    *"===" and "!==" for comparing object memory address
+    *Operator "instanceof"
+    *instance id
+    *instance mark "this"
+
+===== Build 0020: 2019/02/10 =====
+
+*Added syntax:
+    *Multiple inheritance
+    *Abstract method
+    *Compiler label followed by "@"
+    *Private access of a class method or attribute
+*Bug fixes:
+    *Fixed encoding problem
+*Added abstract library classes:
+    *Queue, Stack
+
+===== Build 0019: 2019/02/09 =====
+
+*Functionality augment:
+    *Added support for object builtin method override
+*Added native function:
+    *"eval"
+*Optimization:
+    *Semicolon at the last of file might be omitted
+    *Changed integer division
+*Bug unfixed:
+    *UTF-8 coding
+
+===== Build 0018: 2019/02/07 =====
+
+*Bug fixes:
+    *fixed bug that "input()" does not work properly.
+
+===== Build 0017: 2019/02/07 =====
+
+*Added native functions:
+    *input()
+    *f_open()
+*Added built-in library:
+    *io
+*Depreciated native function "time()", replaced with "system.time()"
+*Bug fixes:
+    *Unavailable console
+    *String escape not displaying properly
+*Added command-line helps
+
+===== Build 0016: 2019/02/06 =====
+
+*Added syntax:
+    *"=>" for calling the returning value of the last function
+*Bug fixes:
+    *Fixed a bug that return statement cannot followed by function declaration.
+    *Missing positional argument may caused internal crash
+*Added native function: string()
+*Added operations between string literals
+*Added functions in "math" library
+
+===== Build 0015: 2019/02/06 =====
+
+*Bug fixes:
+    *Fixed list setitem (list[index] = item) sometimes does not work
+    *Cannot get attributes in NativeTypes
+*Added built-in types:
+    *Pair
+    *System : use "system.argv" to get command line arguments
+
+===== Build 0014: 2019/02/05 =====
+
+*Added syntax:
+    *Not statement "!"
+*Bug fixes:
+    *Some unfixed bugs caused by the augmentation of file name
+    *Presets arguments cannot be "true", "false", or "null"
+    *Object comparison to null
+    *Return statement sometimes does not terminate loops
+*Added native type:
+    *string
+*Added native functions:
+    *int, float
+*Added built-in lib:
+    *"math"
+*Implemented built-in function:
+    *merge_sort
+*Moved native functions "all" and "any" to lib
+
+===== Build 0013: 2019/02/05 =====
+
+*Added file tracing
+*Added syntax:
+    *For loop
+    *Default value for function argument
+
+===== Build 0012: 2019/02/04 =====
+
+*Added library functions:
+    *Added function "filter"
+*Optimization:
+    *Optimized boolean
+
+===== Build 0011: 2019/02/03 =====
+
+*Added library functions:
+    *Added function "map"
+*Optimization:
+    *Optimized null pointer
+*Bug fixes:
+    *Arithmetic between Boolean and Null
+    *Fixed null and boolean comparison
+    *Fixed a bug that line comment after code caused error
+*Added syntax:
+    *Docstring, quoted by /* and */
+
+===== Build 0010 : 2019/02/03 =====
+
+*Added syntax:
+    *Added dynamic assignment operators: +=, -=, *=, /=, %=, &=, ^=, |=, <<=, >>=
+    *Added native functions: all(list), any(list)
+*Bug fixes:
+    *Fixed that SPL might recognize 0 as None
+
+===== Build 0009 : 2019/02/03 =====
+
+*Added SPL console:
+    *Currently only supports one line expression
+*Added syntax:
+    *Added import statement
+*Optimization:
+    *Repacked directories
+    *Move the comment filter forward, avoiding the string literal after "//" being tokenized
+
+===== Build 0008 : 2019/02/02 =====
+
+*Added syntax:
+    *Operator overload supports
+*Removed the old lexer and parser
+
+===== Build 0007 : 2019/02/02 =====
+
+*Rewrote the conditional statement
+*Added syntax:
+    *Implemented index operation [] (get item and set item)
+*Bug fixes:
+    *Parentheses at the beginning of a statement not working
+
+===== Build 0006 : 2019/02/02 =====
+
+*Rewrote the lexer and parser for fixing nested function calls
+*Fixed a bug that class initializer not working properly
+*Added link of calling native object methods
+*Modified interpreter:
+    *Added wrapper of boolean and null
+
+===== Build 0005 : 2019/02/02 =====
+
+*Added syntax:
+    *Added keywords "break", "continue"
+    *Added boolean type "true", "false"
+    *Added null pointer "null"
+    *Added bitwise operators "&", "^", "|", "<<", ">>"
+    *Implemented logical operators "&&", "||"
+*Modified SPL executable:
+    *Flag changes:
+        v -> vars
+        t -> timer
+        token -> tokens
+
+===== Build 0004 : 2019/02/01 =====
+
+*Added syntax:
+    *Added keyword "return" which terminates a function call
+    *Semicolon after "}" may be omitted now
+*Bug fixes:
+    *Fixed this type of bugs: "return new Classname()"
+
+===== Build 0003 : 2019/02/01 =====
+
+*Added native function "type"
+*passed argv to interpreter
+
+===== Build 0002 : 2019/02/01 =====
+
+*Added Support for class constructor
+*Fixed that "==" not works.
+
+===== Build 0001 : 2019/01/31 =====
+
+*Release
