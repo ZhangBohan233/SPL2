@@ -12,7 +12,7 @@ BINARY_OPERATORS = {"+": "add", "-": "sub", "*": "mul", "/": "truediv", "%": "mo
                     "<<": "lshift", ">>": "rshift", "===": "", "!==": "", "instanceof": "",
                     "subclassof": "", "and": "and", "or": "or", "is": "", ":": ""}
 UNARY_OPERATORS = {"!": "not", "not": "not"}
-OTHERS = {"=", "@", ":"}
+OTHERS = {"=", "@", ":", ":="}
 ALL = [SYMBOLS, UNARY_OPERATORS, BINARY_OPERATORS, TERNARY_OPERATORS, OTHERS, MIDDLE]
 # ALL = set().union(SYMBOLS) \
 #     .union(BINARY_OPERATORS) \

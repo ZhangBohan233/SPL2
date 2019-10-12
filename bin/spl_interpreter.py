@@ -509,7 +509,7 @@ class ClassInstance(lib.SplObject):
         else:
             attr = self.env.attributes()
             attr.pop("this")
-            return "<{}>: {}".format(self.class_name, lib.make_pair(attr))
+            return "<{} at {}>: {}".format(self.class_name, self.id, lib.make_pair(attr))
 
 
 class Module(lib.SplObject):
@@ -1783,6 +1783,20 @@ def eval_for_loop_stmt(node: ast.ForLoopStmt, env: Environment):
                                     .format(node.file, node.line_num))
 
 
+def eval_lambda(node: ast.LambdaExpression, env: Environment):
+    if node.left.node_type == ast.NAME_NODE:
+        pairs = [ParameterPair(node.left.name, INVALID)]
+    elif node.left.node_type == ast.BLOCK_STMT:
+        pairs = [ParameterPair(line.name, INVALID) for line in node.left.lines]
+    else:
+        raise lib.TypeException("Unknown argument syntax for lambda expression, in file '{}', at line {}"
+                                .format(node.file, node.line_num))
+    f: Function = Function(pairs, node.right, env, False, lib.Set(), "")
+    f.file = node.file
+    f.line_num = node.line_num
+    return f
+
+
 def eval_def(node: ast.DefStmt, env: Environment):
     block: ast.BlockStmt = node.params
     params_lst = []
@@ -2031,7 +2045,8 @@ NODE_TABLE = {
     ast.IN_DECREMENT_OPERATOR: eval_increment_decrement,
     ast.INDEXING_NODE: eval_indexing_node,
     ast.IMPORT_NODE: eval_import_node,
-    ast.ANNOTATION_NODE: eval_ann_node
+    ast.ANNOTATION_NODE: eval_ann_node,
+    ast.LAMBDA_EXPRESSION: eval_lambda
 }
 
 
@@ -2063,7 +2078,6 @@ def string_run(self: lib.String, env):
 
 
 lib.String.__run__ = string_run
-
 
 OBJECT_DOC = """
 The superclass of all spl object.

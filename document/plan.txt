@@ -1,11 +1,11 @@
 ===== 2.0
 
-* Remove keyword functions and space function calls
-* Remove the parenthesis around conditional statements
-* Variable declaration via :=
+* Remove keyword functions and space function calls     ...done
+* Remove the parenthesis around conditional statements     ...done
+* Variable declaration via :=     ...done
 * Remove all duplicate operators
-* Manual memory management
-* Lambda expression
+* Manual memory management     ...discarded
+* Lambda expression     ...done
 
 ===== 1.7 =====
 

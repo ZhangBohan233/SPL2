@@ -1,5 +1,4 @@
 from bin import spl_ast as ast, spl_token_lib as stl
-import os
 
 ABSTRACT_IDENTIFIER = {"fn", "class"}
 
@@ -31,7 +30,6 @@ class Parser:
         brace_count = 0
         class_braces = []
         import_braces = []
-        # current_keyword = None
 
         while True:
             try:
@@ -40,25 +38,16 @@ class Parser:
                 if isinstance(token, stl.IdToken):
                     sym = token.symbol
                     if sym == "if":
-                        # cond_nest_list.append(par_count)
-                        # par_count += 1
                         parser.add_if(line)
                         is_conditional = True
-                        # i += 1
                     elif sym == "else":
                         parser.add_else()
                     elif sym == "while":
-                        # cond_nest_list.append(par_count)
-                        # par_count += 1
                         parser.add_while(line)
                         is_conditional = True
-                        # i += 1
                     elif sym == "for":
-                        # cond_nest_list.append(par_count)
-                        # par_count += 1
                         parser.add_for_loop(line)
                         is_conditional = True
-                        # i += 1
                     elif sym == "return":
                         parser.add_unary(line, "return")
                         # parser.add_return(line)
@@ -108,9 +97,6 @@ class Parser:
                         elif is_this_list(class_braces, brace_count):
                             parser.build_class()
                             class_braces.pop()
-                        # elif current_keyword is not None:
-                        #     current_keyword.parse(parser.get_block_and_remove())
-                        #     current_keyword = None
                         next_token = self.tokens[i + 1]
                         if not (isinstance(next_token, stl.IdToken) and next_token.symbol in stl.NO_BUILD_LINE):
                             parser.build_line()
@@ -123,6 +109,7 @@ class Parser:
                         par_count += 1
                     elif sym == ")":
                         par_count -= 1
+                        next_sig_token = self.find_next_significant_token(i)
                         if is_this_list(call_nest_list, par_count):
                             parser.build_line()
                             parser.build_call()
@@ -130,13 +117,10 @@ class Parser:
                         elif is_this_list(param_nest_list, par_count):
                             parser.build_func_params()
                             param_nest_list.pop()
-                        # elif is_this_list(cond_nest_list, par_count):
-                        #     parser.build_expr()
-                        #     parser.build_condition()
-                        #     cond_nest_list.pop()
+                        elif next_sig_token.is_identifier() and next_sig_token.symbol == "->":
+                            parser.build_lambda_parameters()
                         else:
                             parser.build_parenthesis()
-                            # extra_precedence -= 1
                     elif sym == "[":
                         if i > 0 and is_call(self.tokens[i - 1]):
                             parser.add_getitem(line)
@@ -161,15 +145,14 @@ class Parser:
                         parser.build_expr()
                         parser.add_assignment(line, var_level)
                         var_level = ast.ASSIGN
+                    elif sym == ":=":
+                        parser.build_expr()
+                        parser.add_assignment(line, ast.VAR)
                     elif sym == ",":
                         if var_level == ast.ASSIGN:  # the normal level
                             parser.build_line()
                     elif sym == ".":
                         parser.add_dot(line)
-                    # elif sym == "keyword":
-                    #     i += 1
-                    #     kw_token: stl.IdToken = self.tokens[i]
-                    #     current_keyword = CustomKeyword(kw_token.symbol)
                     elif sym == "~":  # a special mark
                         pass
                     elif sym == "fn":
@@ -191,6 +174,8 @@ class Parser:
                         param_nest_list.append(par_count)
                         par_count += 1
                         is_abstract = False
+                    elif sym == "->":
+                        parser.add_lambda(line)
                     elif sym == "operator":
                         func_doc = self.get_doc(i)
                         i += 1
@@ -348,6 +333,14 @@ class Parser:
             if isinstance(doc_token, stl.DocToken):
                 return doc_token.text
         return ""
+
+    def find_next_significant_token(self, index: int):
+        index += 1
+        while index < len(self.tokens):
+            token = self.tokens[index]
+            if not token.is_eol():
+                return token
+            index += 1
 
 
 def is_call(last_token: stl.Token) -> bool:

@@ -1,4 +1,18 @@
+********** SPL 2.0 Alpha 1 **********
+===== Build 0095 2019/10/12 =====
+
+* New syntax:
+    * Variable declaration and assignment via operator ":="
+    * Syntax changes of conditional statements:
+        * Parenthesis around condition statement is no longer needed
+        * Braces around then block is required
+    * Lambda expressions:
+        * "x -> f(x)" for single parameter expression
+        * "(args...) -> f(x)" for multiple parameters expression
+
+
 ********** SPL 1.7 Alpha 1 **********
+### DISCARDED ###
 ===== Build 0094 2019/06/19 =====
 
 * New syntax:

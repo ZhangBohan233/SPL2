@@ -106,9 +106,10 @@ class SplObject:
     # ----- Attributes -----
     #     id: the identifier of this object, is guaranteed to be unique
     """
+    id: int
 
     def __init__(self):
-        pass
+        self.id = mem.MEMORY.allocate()
 
 
 class NativeType(SplObject):

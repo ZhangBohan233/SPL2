@@ -5,10 +5,10 @@ PRECEDENCE = {"+": 50, "-": 50, "*": 100, "/": 100, "%": 100,
               "!=": 20, "&&": 5, "and": 5, "||": 5, "or": 5, "&": 12, "^": 11, "|": 10,
               "<<": 40, ">>": 40, "unpack": 200, "kw_unpack": 200, "new": 150,
               ".": 500, "!": 200, "neg": 200, "return": 1, "throw": 1, "namespace": 150,
-              "=": 2, "+=": 2, "-=": 2, "*=": 2, "/=": 2, "%=": 2,
-              "&=": 2, "^=": 2, "|=": 2, "<<=": 2, ">>=": 2, "=>": 500,
+              "=": 3, "+=": 3, "-=": 3, "*=": 3, "/=": 3, "%=": 3,
+              "&=": 3, "^=": 3, "|=": 3, "<<=": 3, ">>=": 3,
               "===": 20, "is": 20, "!==": 20, "instanceof": 25, "subclassof": 25, "assert": 1,
-              "?": 3, "++": 300, "--": 300, ":": 2}
+              "?": 4, "++": 300, "--": 300, ":": 3, "->": 2}
 
 MULTIPLIER = 1000
 
@@ -40,6 +40,7 @@ IN_DECREMENT_OPERATOR = 32
 INDEXING_NODE = 33
 IMPORT_NODE = 34
 ANNOTATION_NODE = 35
+LAMBDA_EXPRESSION = 36
 
 # Variable levels
 ASSIGN = 0
@@ -194,6 +195,13 @@ class BinaryOperator(BinaryExpr):
         BinaryExpr.__init__(self, line, op)
 
         self.node_type = BINARY_OPERATOR
+
+
+class LambdaExpression(BinaryExpr):
+    def __init__(self, line):
+        BinaryExpr.__init__(self, line, "->")
+
+        self.node_type = LAMBDA_EXPRESSION
 
 
 class UnaryOperator(Expr):
@@ -519,22 +527,22 @@ class TryStmt(Node):
         return "TryStmt"
 
 
-class JumpNode(Node):
-    to = None
-    args = None
-
-    def __init__(self, line, to):
-        Node.__init__(self, line)
-
-        self.node_type = JUMP_NODE
-        self.to = to
-        self.args = []
-
-    def __str__(self):
-        return "Jump({}: {})".format(self.to, self.args)
-
-    def __repr__(self):
-        return self.__str__()
+# class JumpNode(Node):
+#     to = None
+#     args = None
+#
+#     def __init__(self, line, to):
+#         Node.__init__(self, line)
+#
+#         self.node_type = JUMP_NODE
+#         self.to = to
+#         self.args = []
+#
+#     def __str__(self):
+#         return "Jump({}: {})".format(self.to, self.args)
+#
+#     def __repr__(self):
+#         return self.__str__()
 
 
 class UndefinedNode(LeafNode):
@@ -567,6 +575,15 @@ class AbstractSyntaxTree:
 
     def invalidate_inner(self):
         self.inner = None
+
+    def get_last(self):
+        if self.inner:
+            return self.inner.get_last()
+        else:
+            if len(self.stack) > 0:
+                return self.stack[-1]
+            else:
+                raise stl.ParseException("Nothing before this")
 
     def last_is_name(self):
         if self.inner:
@@ -624,6 +641,14 @@ class AbstractSyntaxTree:
             self.in_expr = True
             op_node = BinaryOperator(line, op)
             op_node.assignment = assignment
+            self.stack.append(op_node)
+
+    def add_lambda(self, line):
+        if self.inner:
+            self.inner.add_lambda(line)
+        else:
+            self.in_expr = True
+            op_node = LambdaExpression(line)
             self.stack.append(op_node)
 
     def add_unary(self, line, op):
@@ -925,8 +950,21 @@ class AbstractSyntaxTree:
             block = self.inner.get_as_block()
             self.invalidate_inner()
             if len(block.lines) != 1:
-                raise stl.ParseException("Empty parenthesis")
+                if len(block.lines) == 0:
+                    raise stl.ParseException("Empty parenthesis")
+                else:
+                    raise stl.ParseException("Too many elements in parenthesis")
             self.stack.append(block.lines[0])
+
+    def build_lambda_parameters(self):
+        if self.inner.inner:
+            self.inner.build_lambda_parameters()
+        else:
+            self.inner.build_line()
+            block = self.inner.get_as_block()
+            self.invalidate_inner()
+            block.standalone = True
+            self.stack.append(block)
 
     def build_extends(self):
         if self.inner.inner:

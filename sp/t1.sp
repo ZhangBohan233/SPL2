@@ -16,3 +16,11 @@ for var b = 0; b < 200; b++ {
     a += 1;
 }
 a;
+if true {
+    c := 0;
+    println(c);
+}
+lst := [1,2,3,4,5,6];
+for var x ; lst {
+    println(x);
+}

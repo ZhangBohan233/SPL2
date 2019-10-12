@@ -1,5 +1,4 @@
 from bin import spl_lib as lib
-import bin.spl_memory as mem
 
 GLOBAL_SCOPE = 0
 CLASS_SCOPE = 1
@@ -7,14 +6,6 @@ FUNCTION_SCOPE = 2
 LOOP_SCOPE = 3
 SUB_SCOPE = 4
 MODULE_SCOPE = 5
-
-
-def point(obj: lib.SplObject) -> mem.Pointer:
-    return mem.MEMORY.allocate(obj)
-
-
-def ref(pointer: mem.Pointer):
-    return mem.MEMORY.ref(pointer)
 
 
 class NullPointer:
@@ -82,8 +73,8 @@ class Environment:
 
     def __init__(self, scope_type, outer):
         self.scope_type = scope_type
-        self.variables: dict[str: mem.Pointer] = {}  # Stack variables
-        self.constants: dict[str: mem.Pointer] = {}  # Constants
+        self.variables: dict = {}  # Stack variables
+        self.constants: dict = {}  # Constants
 
         self.outer: Environment = outer
 
@@ -166,7 +157,7 @@ class Environment:
         obj = self._inner_get_heap(class_name)
         if obj is NULLPTR:
             raise lib.NameException("Global name '{}' is not defined".format(class_name))
-        return ref(obj)
+        return obj
 
     def terminate(self, exit_value):
         raise lib.SplException("Return outside function.")
@@ -215,30 +206,30 @@ class Environment:
                 not annotations.contains(SUPPRESS) and \
                 key[0].islower() and self._local_contains(key):
             lib.compile_time_warning("Warning: re-declaring method '{}' in '{}', at line {}".format(key, lf[1], lf[0]))
-        self.variables[key] = point(value)
+        self.variables[key] = value
 
     def define_var(self, key, value, lf):
         if self._local_contains(key):
             raise lib.NameException("Name '{}' is already defined in this scope, in '{}', at line {}"
                                     .format(key, lf[1], lf[0]))
         else:
-            self.variables[key] = point(value)
+            self.variables[key] = value
 
     def define_const(self, key, value, lf):
         if self.contains_key(key):
             raise lib.NameException("Name '{}' is already defined in this scope, in {}, at line {}"
                                     .format(key, lf[1], lf[0]))
         else:
-            self.constants[key] = point(value)
+            self.constants[key] = value
 
     def assign(self, key, value, lf):
         if key in self.variables:
-            self.variables[key] = point(value)
+            self.variables[key] = value
         else:
             out = self.outer
             while out:
                 if key in out.variables:
-                    out.variables[key] = point(value)
+                    out.variables[key] = value
                     return
                 out = out.outer
             if not self.assign_const(key, value, lf) and not self.assign_namespace(key, value):
@@ -248,7 +239,7 @@ class Environment:
     def assign_const(self, key, value, lf) -> bool:
         if key in self.constants:
             if self.constants[key] is UNDEFINED:
-                self.constants[key] = point(value)
+                self.constants[key] = value
                 return True
             else:
                 raise lib.NameException("Assignment to constant '{}' is not allowed, in '{}', at line {}"
@@ -258,7 +249,7 @@ class Environment:
             while out:
                 if key in out.constants:
                     if out.constants[key] is UNDEFINED:
-                        out.constants[key] = point(value)
+                        out.constants[key] = value
                         return True
                     else:
                         raise lib.NameException("Assignment to constant '{}' is not allowed, in '{}', at line {}"
@@ -335,7 +326,7 @@ class Environment:
         if v is NULLPTR:
             raise lib.NameException("Name '{}' is not defined, in file '{}', at line {}"
                                     .format(key, line_file[1], line_file[0]))
-        return ref(v)
+        return v
 
     def get_class(self, class_name):
         v = self._inner_get(class_name)
@@ -343,7 +334,7 @@ class Environment:
             raise lib.NameException("Class or module '{}' is not defined".format(class_name))
         elif type(v).__name__ == "Function":
             return v.outer_scope.outer.get_class(class_name)
-        return ref(v)
+        return v
 
     def get_global(self):
         if self.is_global():
@@ -458,7 +449,7 @@ class GlobalEnvironment(MainAbstractEnvironment):
         if k in self.heap:
             raise lib.NameException("Global name '{}' has already defined".format(k))
         else:
-            self.heap[k] = point(v)
+            self.heap[k] = v
 
     def _inner_get_heap(self, key):
         return self.heap[key] if key in self.heap else NULLPTR
@@ -474,12 +465,12 @@ class GlobalEnvironment(MainAbstractEnvironment):
         :return: a reference to the module
         """
         if file_path in self.modules:
-            return ref(self.modules[file_path])
+            return self.modules[file_path]
         else:
             return None
 
     def add_module(self, file_path, module):
-        self.modules[file_path] = point(module)
+        self.modules[file_path] = module
 
 
 class ModuleEnvironment(MainAbstractEnvironment):
