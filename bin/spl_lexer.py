@@ -17,7 +17,8 @@ CROSS_CONCATENATE = {
     (100, 9), (16, 9), (10, 9), (11, 9),
     (1, 14), (14, 1), (0, 14), (14, 0),
     (19, 9),  # :=
-    (21, 8)  # ->
+    (21, 8),  # ->
+    (20, 21)  # <-
 }
 LINE_FILE = 0, "TOKENIZER"
 
@@ -223,18 +224,12 @@ class Tokenizer:
                 self.tokens.append(stl.NumToken(line_num, part))
             elif is_integer(part):
                 self.tokens.append(stl.NumToken(line_num, part))
-            # elif part == "\n":
-            #     self.tokens.append(stl.IdToken(line_num, part))
             elif stl.is_in_all(part):
                 self.tokens.append(stl.IdToken(line_num, part))
-            # elif part in stl.ALL:
-            #     self.tokens.append(stl.IdToken(line_num, part))
             elif part[:-1] in stl.OP_EQ:
                 self.tokens.append(stl.IdToken(line_num, part))
             elif part == stl.EOL:
                 self.tokens.append(stl.IdToken(line_num, stl.EOL))
-            elif part == "=>":
-                self.tokens.append(stl.IdToken(line_num, part))
             elif part in stl.OMITS:
                 pass
             else:

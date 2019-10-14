@@ -28,3 +28,5 @@ fn no_arg(f) {
 var i = 0;
 res5 := no_arg(() -> i++);
 println(res5);
+
+var lam = e -> e + 1;

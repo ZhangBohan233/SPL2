@@ -4,11 +4,11 @@ PRECEDENCE = {"+": 50, "-": 50, "*": 100, "/": 100, "%": 100,
               "==": 20, ">": 25, "<": 25, ">=": 25, "<=": 25,
               "!=": 20, "&&": 5, "and": 5, "||": 5, "or": 5, "&": 12, "^": 11, "|": 10,
               "<<": 40, ">>": 40, "unpack": 200, "kw_unpack": 200, "new": 150,
-              ".": 500, "!": 200, "neg": 200, "return": 1, "throw": 1, "namespace": 150,
-              "=": 3, "+=": 3, "-=": 3, "*=": 3, "/=": 3, "%=": 3,
+              ".": 500, "!": 200, "neg": 200, "return": 0, "throw": 0, "namespace": 150,
+              "=": 1, "+=": 3, "-=": 3, "*=": 3, "/=": 3, "%=": 3,
               "&=": 3, "^=": 3, "|=": 3, "<<=": 3, ">>=": 3,
-              "===": 20, "is": 20, "!==": 20, "instanceof": 25, "subclassof": 25, "assert": 1,
-              "?": 4, "++": 300, "--": 300, ":": 3, "->": 2}
+              "===": 20, "is": 20, "!==": 20, "instanceof": 25, "subclassof": 25, "assert": 0,
+              "?": 4, "++": 300, "--": 300, ":": 3, "->": 2, "<-": 2}
 
 MULTIPLIER = 1000
 
@@ -29,18 +29,16 @@ FOR_LOOP_STMT = 19
 DEF_STMT = 20
 FUNCTION_CALL = 21
 CLASS_STMT = 22
-# CLASS_INIT = 23
 ABSTRACT = 25
 TRY_STMT = 27
 CATCH_STMT = 28
-# TYPE_NODE = 29
-# JUMP_NODE = 30
 UNDEFINED_NODE = 31
 IN_DECREMENT_OPERATOR = 32
 INDEXING_NODE = 33
 IMPORT_NODE = 34
 ANNOTATION_NODE = 35
 LAMBDA_EXPRESSION = 36
+ANONYMOUS_CLASS = 37
 
 # Variable levels
 ASSIGN = 0
@@ -202,6 +200,13 @@ class LambdaExpression(BinaryExpr):
         BinaryExpr.__init__(self, line, "->")
 
         self.node_type = LAMBDA_EXPRESSION
+
+
+class AnonymousClass(BinaryExpr):
+    def __init__(self, line):
+        BinaryExpr.__init__(self, line, "<-")
+
+        self.node_type = ANONYMOUS_CLASS
 
 
 class UnaryOperator(Expr):
@@ -527,24 +532,6 @@ class TryStmt(Node):
         return "TryStmt"
 
 
-# class JumpNode(Node):
-#     to = None
-#     args = None
-#
-#     def __init__(self, line, to):
-#         Node.__init__(self, line)
-#
-#         self.node_type = JUMP_NODE
-#         self.to = to
-#         self.args = []
-#
-#     def __str__(self):
-#         return "Jump({}: {})".format(self.to, self.args)
-#
-#     def __repr__(self):
-#         return self.__str__()
-
-
 class UndefinedNode(LeafNode):
     def __init__(self, line):
         LeafNode.__init__(self, line)
@@ -649,6 +636,14 @@ class AbstractSyntaxTree:
         else:
             self.in_expr = True
             op_node = LambdaExpression(line)
+            self.stack.append(op_node)
+
+    def add_anonymous_class(self, line):
+        if self.inner:
+            self.inner.add_anonymous_class(line)
+        else:
+            self.in_expr = True
+            op_node = AnonymousClass(line)
             self.stack.append(op_node)
 
     def add_unary(self, line, op):

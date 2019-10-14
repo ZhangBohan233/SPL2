@@ -1135,8 +1135,6 @@ def set_item(call_obj, index_node, value, env):
 
 
 def init_class(node: ast.Node, call_env: Environment, class_define_env=None):
-    # lf = node.line_num, node.file
-
     if class_define_env is None:
         class_define_env = call_env
 
@@ -1162,7 +1160,6 @@ def init_class(node: ast.Node, call_env: Environment, class_define_env=None):
                                     .format(node.file, node.line_num))
     elif isinstance(node, ast.Dot):
         module = evaluate(node.left, class_define_env)
-        # module: Module = class_define_env.get_class(node.left.name)
         return init_class(node.right, call_env, module.env)
     else:
         raise lib.TypeException("Could not create class instance of type '{}', in file '{}', at line {}"
@@ -1789,12 +1786,61 @@ def eval_lambda(node: ast.LambdaExpression, env: Environment):
     elif node.left.node_type == ast.BLOCK_STMT:
         pairs = [ParameterPair(line.name, INVALID) for line in node.left.lines]
     else:
-        raise lib.TypeException("Unknown argument syntax for lambda expression, in file '{}', at line {}"
+        raise lib.TypeException("Unexpected argument syntax for lambda expression, in file '{}', at line {}"
                                 .format(node.file, node.line_num))
     f: Function = Function(pairs, node.right, env, False, lib.Set(), "")
     f.file = node.file
     f.line_num = node.line_num
     return f
+
+
+def eval_anonymous_class(node: ast.AnonymousClass, env: Environment):
+    if node.left.node_type == ast.UNARY_OPERATOR and node.left.operation == "new":
+        stmt = node.left.value
+        block: ast.BlockStmt = node.right
+        block.standalone = False
+        return create_anonymous_class(stmt, block, env)
+    else:
+        raise lib.TypeException("Unexpected usage of '<-' expression, in file '{}', at line {}"
+                                .format(node.file, node.line_num))
+
+
+def create_anonymous_class(node, block: ast.BlockStmt, call_env: Environment, superclass_defined_env=None):
+    """
+    :param node:
+    :param block:
+    :param call_env: the environment of calling, which is the same as the child class defined env in this case
+    :param superclass_defined_env:
+    :return:
+    """
+    if superclass_defined_env is None:
+        superclass_defined_env = call_env
+
+    if node.node_type == ast.NAME_NODE:
+        superclass = superclass_defined_env.get_class(node.name)
+        call = None
+    elif node.node_type == ast.FUNCTION_CALL:
+        superclass: Class = evaluate(node.call_obj, superclass_defined_env)
+        call = node
+    elif node.node_type == ast.DOT:
+        module = evaluate(node.left, call_env)
+        return create_anonymous_class(node.right, block, call_env, module.env)
+    else:
+        raise lib.TypeException("Unexpected usage of '<-' expression, in file '{}', at line {}"
+                                .format(node.file, node.line_num))
+
+    superclasses = [call_env.get_class("Object"), superclass]
+    cla = Class("", block, False, superclasses, call_env,
+                "", node.line_num, node.file)
+    instance = create_instance(cla, call_env, superclass_defined_env, None)  # Function has different call mode
+
+    if call is not None:
+        lf = call.line_num, call.file
+        func: Function = instance.env.get(superclass.class_name, lf)
+        args_list = make_arg_list(call)[1]
+        call_function(args_list, lf, func, call_env)
+
+    return instance
 
 
 def eval_def(node: ast.DefStmt, env: Environment):
@@ -1842,14 +1888,6 @@ def eval_class_stmt(node: ast.ClassStmt, env: Environment):
                 node.doc, node.line_num, node.file)
     env.define_var(node.class_name, cla, (node.line_num, node.file))
     return cla
-
-
-# def eval_jump(node, env: Environment):
-#     func: Function = env.get(node.to, (0, "f"))
-#     lf = node.line_num, node.file
-#     for i in range(len(node.args.lines)):
-#         env.assign(func.params[i].name, evaluate(node.args.lines[i], env), lf)
-#     return evaluate(func.body, env)
 
 
 def eval_assert(node: ast.Node, env: Environment):
@@ -2040,13 +2078,13 @@ NODE_TABLE = {
     ast.FUNCTION_CALL: eval_func_call,
     ast.CLASS_STMT: eval_class_stmt,
     ast.TRY_STMT: eval_try_catch,
-    # ast.JUMP_NODE: eval_jump,
     ast.UNDEFINED_NODE: lambda n, env: UNDEFINED,
     ast.IN_DECREMENT_OPERATOR: eval_increment_decrement,
     ast.INDEXING_NODE: eval_indexing_node,
     ast.IMPORT_NODE: eval_import_node,
     ast.ANNOTATION_NODE: eval_ann_node,
-    ast.LAMBDA_EXPRESSION: eval_lambda
+    ast.LAMBDA_EXPRESSION: eval_lambda,
+    ast.ANONYMOUS_CLASS: eval_anonymous_class
 }
 
 

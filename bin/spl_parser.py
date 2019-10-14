@@ -176,6 +176,8 @@ class Parser:
                         is_abstract = False
                     elif sym == "->":
                         parser.add_lambda(line)
+                    elif sym == "<-":
+                        parser.add_anonymous_class(line)
                     elif sym == "operator":
                         func_doc = self.get_doc(i)
                         i += 1

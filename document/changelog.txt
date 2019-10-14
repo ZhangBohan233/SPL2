@@ -1,3 +1,11 @@
+********** SPL 2.0 Alpha 2 **********
+===== Build 0096 2019/10/12 =====
+
+* New syntax:
+    * Anonymous class denoted by symbol "<-"
+* Bug fixes:
+    * The lambda expression has same precedence as assignment symbol "="
+
 ********** SPL 2.0 Alpha 1 **********
 ===== Build 0095 2019/10/12 =====
 
