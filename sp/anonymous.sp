@@ -45,3 +45,11 @@ obj := new Object <- {
     }
 }
 obj.test();
+
+for var i; range(5) {
+    println(i);
+}
+
+for var i; range(10,5,-1) {
+    println(i);
+}

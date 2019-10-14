@@ -2,18 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="8d62d698-88ee-4791-8ba4-d0df8be037ce" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/sp/anonymous.sp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/dictionaries/zbh.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/dictionaries/zbh.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/spl_ast.py" beforeDir="false" afterPath="$PROJECT_DIR$/bin/spl_ast.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/spl_interpreter.py" beforeDir="false" afterPath="$PROJECT_DIR$/bin/spl_interpreter.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/spl_lexer.py" beforeDir="false" afterPath="$PROJECT_DIR$/bin/spl_lexer.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/spl_parser.py" beforeDir="false" afterPath="$PROJECT_DIR$/bin/spl_parser.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/bin/spl_token_lib.py" beforeDir="false" afterPath="$PROJECT_DIR$/bin/spl_token_lib.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/document/changelog.txt" beforeDir="false" afterPath="$PROJECT_DIR$/document/changelog.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/document/plan.txt" beforeDir="false" afterPath="$PROJECT_DIR$/document/plan.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sp/lambda.sp" beforeDir="false" afterPath="$PROJECT_DIR$/sp/lambda.sp" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/sp/t2.sp" beforeDir="false" afterPath="$PROJECT_DIR$/sp/t2.sp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/lib/lang.sp" beforeDir="false" afterPath="$PROJECT_DIR$/lib/lang.sp" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/sp/anonymous.sp" beforeDir="false" afterPath="$PROJECT_DIR$/sp/anonymous.sp" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -105,7 +95,7 @@
       <workItem from="1568722672554" duration="76000" />
       <workItem from="1570853663553" duration="2869000" />
       <workItem from="1570902700183" duration="5223000" />
-      <workItem from="1570995854248" duration="12328000" />
+      <workItem from="1570995854248" duration="12793000" />
     </task>
     <servers />
   </component>
@@ -126,6 +116,6 @@
     </option>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
-    <SUITE FILE_PATH="coverage/spl2$spl.coverage" NAME="spl Coverage Results" MODIFIED="1571030021537" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/spl2$spl.coverage" NAME="spl Coverage Results" MODIFIED="1571030559197" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
 </project>
