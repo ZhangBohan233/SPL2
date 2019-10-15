@@ -2,12 +2,12 @@ from bin import spl_token_lib as stl
 
 PRECEDENCE = {"+": 50, "-": 50, "*": 100, "/": 100, "%": 100,
               "==": 20, ">": 25, "<": 25, ">=": 25, "<=": 25,
-              "!=": 20, "&&": 5, "and": 5, "||": 5, "or": 5, "&": 12, "^": 11, "|": 10,
+              "!=": 20, "&&": 5, "||": 5, "&": 12, "^": 11, "|": 10,
               "<<": 40, ">>": 40, "unpack": 200, "kw_unpack": 200, "new": 150,
               ".": 500, "!": 200, "neg": 200, "return": 0, "throw": 0, "namespace": 150,
               "=": 1, "+=": 3, "-=": 3, "*=": 3, "/=": 3, "%=": 3,
               "&=": 3, "^=": 3, "|=": 3, "<<=": 3, ">>=": 3,
-              "===": 20, "is": 20, "!==": 20, "instanceof": 25, "subclassof": 25, "assert": 0,
+              "===": 20, "!==": 20, "instanceof": 25, "subclassof": 25, "assert": 0,
               "?": 4, "++": 300, "--": 300, ":": 3, "->": 2, "<-": 2}
 
 MULTIPLIER = 1000
@@ -510,6 +510,7 @@ class CatchStmt(CondStmt):
         return "catch ({}) {}".format(self.condition, self.then)
 
     def __repr__(self):
+        # return self.__str__()
         return "CatchStmt"
 
 

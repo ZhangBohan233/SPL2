@@ -1314,7 +1314,9 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
     :param call_env: the environment where the function call was made
     :return: the function result
     """
-
+    if not isinstance(func, Function):
+        raise lib.TypeException("Type {} is not callable, in '{}', at line {}."
+                                .format(typeof(func), lf[1], lf[0]))
     if func.abstract:
         raise lib.AbstractMethodException("Abstract method is not callable, in '{}', at line {}."
                                           .format(lf[1], lf[0]))

@@ -10,8 +10,8 @@ BINARY_OPERATORS = {"+": "add", "-": "sub", "*": "mul", "/": "truediv", "%": "mo
                     "<": "lt", ">": "gt", "==": "eq", ">=": "ge", "<=": "le", "!=": "neq",
                     "&&": "and", "||": "or", "&": "band", "^": "xor", "|": "bor",
                     "<<": "lshift", ">>": "rshift", "===": "", "!==": "", "instanceof": "",
-                    "subclassof": "", "and": "and", "or": "or", "is": "", ":": "", "->": "lambda", "<-": "extendedby"}
-UNARY_OPERATORS = {"!": "not", "not": "not"}
+                    "subclassof": "", ":": "", "->": "lambda", "<-": "extendedby"}
+UNARY_OPERATORS = {"!": "not"}
 OTHERS = {"=", "@", ":", ":="}
 ALL = [SYMBOLS, UNARY_OPERATORS, BINARY_OPERATORS, TERNARY_OPERATORS, OTHERS, MIDDLE]
 # ALL = set().union(SYMBOLS) \

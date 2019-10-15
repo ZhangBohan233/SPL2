@@ -6,42 +6,42 @@ import namespace "stack"
  */
 abstract class Queue {
 
-    abstract function Queue();
+    abstract fn Queue();
 
     /*
      * Returns the number of element in this queue.
      */
-    abstract function size();
+    abstract fn size();
 
     /*
      * Adds an element to the last.
      */
-    abstract function add_last(element);
+    abstract fn add_last(element);
 
-    abstract function remove_last();
+    abstract fn remove_last();
 
     /*
      * Returns first-added element.
      */
-    abstract function get_first();
+    abstract fn get_first();
 
-    abstract function remove_first();
+    abstract fn remove_first();
 }
 
 
 class Deque extends Queue, Stack {
 
-    abstract function Deque();
+    abstract fn Deque();
 
-    abstract function add_first(element);
-
-    @Override
-    abstract function remove_first();
-
-    abstract function get_last();
+    abstract fn add_first(element);
 
     @Override
-    abstract function remove_last();
+    abstract fn remove_first();
+
+    abstract fn get_last();
+
+    @Override
+    abstract fn remove_last();
 }
 
 
@@ -55,17 +55,17 @@ class LLNode {
 class LinkedListIterator extends Iterator {
     var iter;
 
-    function LinkedListIterator(head) {
+    fn LinkedListIterator(head) {
         iter = head;
     }
 
     @Override
-    function __more__() {
+    fn __more__() {
         return iter !== null;
     }
 
     @Override
-    function __next__() {
+    fn __next__() {
         var temp = iter;
         iter = iter.after;
         return temp.value;
@@ -79,17 +79,17 @@ class LinkedList extends Deque, Iterable {
     var head = null;
     var tail = null;
 
-    function LinkedList() {
+    fn LinkedList() {
     }
 
     @Override
-    function __iter__() {
+    fn __iter__() {
         return new LinkedListIterator(head);
     }
 
-    function __str__() {
+    fn __str__() {
         var s = "Link[";
-        for (var cur = head; cur; cur = cur.after) {
+        for var cur = head; cur; cur = cur.after {
             s += string(cur.value) + "->";
         }
         s += "]";
@@ -97,13 +97,13 @@ class LinkedList extends Deque, Iterable {
     }
 
     @Override
-    function size() {
+    fn size() {
         return size_;
     }
 
     @Override
-    function add_last(element) {
-        if (size_ == 0) {
+    fn add_last(element) {
+        if size_ == 0 {
             create(element);
         } else {
             var n = new LLNode;
@@ -117,8 +117,8 @@ class LinkedList extends Deque, Iterable {
     }
 
     @Override
-    function add_first(element) {
-        if (size_ == 0) {
+    fn add_first(element) {
+        if size_ == 0 {
             create(element);
         } else {
             var n = new LLNode;
@@ -132,20 +132,20 @@ class LinkedList extends Deque, Iterable {
     }
 
     @Override
-    function last() {
+    fn last() {
         return tail.value;
     }
 
     @Override
-    function first() {
+    fn first() {
         return head.value;
     }
 
     @Override
-    function remove_first() {
+    fn remove_first() {
         var n = head;
         head = head.after;
-        if (head !== null) {
+        if head !== null {
             head.before = null;
         }
         size_ -= 1;
@@ -153,10 +153,10 @@ class LinkedList extends Deque, Iterable {
     }
 
     @Override
-    function remove_last() {
+    fn remove_last() {
         var n = tail;
         tail = head.before;
-        if (tail) {
+        if tail {
             tail.after = null;
         }
         size_ -= 1;
@@ -164,21 +164,21 @@ class LinkedList extends Deque, Iterable {
     }
 
     @Override
-    function top() {
+    fn top() {
         return last();
     }
 
     @Override
-    function pop() {
+    fn pop() {
         return remove_last();
     }
 
     @Override
-    function push(element) {
+    fn push(element) {
         return add_last(element)
     }
 
-    function create(ele) {
+    fn create(ele) {
         var n = new LLNode;
         n.value = ele;
         head = n;
@@ -186,7 +186,7 @@ class LinkedList extends Deque, Iterable {
         size_ = 1;
     }
 
-    function removable() {
+    fn removable() {
         return size_ > 0;
     }
 }

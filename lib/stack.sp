@@ -4,11 +4,11 @@
 abstract class Stack {
 
     @Suppress
-    abstract function size();
+    abstract fn size();
 
-    abstract function top();
+    abstract fn top();
 
-    abstract function push(element);
+    abstract fn push(element);
 
-    abstract function pop();
+    abstract fn pop();
 }

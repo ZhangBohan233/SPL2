@@ -7,7 +7,7 @@ if a < 0 {
     a;
 }
 
-while a < 100 {
+while (a < 100) {
     a += 1;
     println(a);
 }

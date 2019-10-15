@@ -168,7 +168,8 @@ class Parser:
                             parser.add_name(line, f_name)
                             parser.add_assignment(line, ast.FUNC_DEFINE)
                         else:
-                            raise stl.ParseException("Illegal function name '{}'".format(f_name))
+                            raise stl.ParseException("Illegal function name '{}', in file '{}', at line {}"
+                                                     .format(f_name, line[1], line[0]))
                         parser.add_function(line, is_abstract, func_doc)
                         i += push_back
                         param_nest_list.append(par_count)
@@ -238,9 +239,10 @@ class Parser:
                         parser.add_try(line)
                     elif sym == "catch":
                         parser.add_catch(line)
-                        i += 1
-                        cond_nest_list.append(par_count)
-                        par_count += 1
+                        is_conditional = True
+                        # i += 1
+                        # cond_nest_list.append(par_count)
+                        # par_count += 1
                     elif sym == "finally":
                         parser.add_finally(line)
                     elif sym == "assert":

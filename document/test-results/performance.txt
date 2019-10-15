@@ -1,3 +1,10 @@
+===== Build 0097 =====
+
+100 k while loop with ++: ~850 ms
+20 fib: ~460 ms
+500 elements merge sort: ~1220 ms
+1000 objects creation: ~180 ms
+
 ===== Build 0088 =====
 
 100 k while loop with ++: ~1170 ms

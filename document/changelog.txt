@@ -1,5 +1,19 @@
+********** SPL 2.0 Alpha 3 **********
+===== Build 0097 2019/10/14 =====
+
+* New syntax:
+    * Catch statement now is no longer surrounded by parenthesis
+* Rewritten library in SPL 2:
+    * math.sp
+    * unittest.sp
+    * queue.sp
+    * stack.sp
+    * algorithm.sp
+* Removed duplicate operators:
+    * Removed "and", "or", "is", "not"
+
 ********** SPL 2.0 Alpha 2 **********
-===== Build 0096 2019/10/12 =====
+===== Build 0096 2019/10/14 =====
 
 * New syntax:
     * Anonymous class denoted by symbol "<-"
@@ -17,7 +31,6 @@
     * Lambda expressions:
         * "x -> f(x)" for single parameter expression
         * "(args...) -> f(x)" for multiple parameters expression
-
 
 ********** SPL 1.7 Alpha 1 **********
 ### DISCARDED ###
