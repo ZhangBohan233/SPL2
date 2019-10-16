@@ -14,46 +14,46 @@ abstract class Node {
 
     var node;  // Graphic
 
-    function Node(node) {
+    fn Node(node) {
         this.node = node;
     }
 
-    function update() {
+    fn update() {
         node.call("update");
     }
 
-    function set_width(width) {
+    fn set_width(width) {
         node.configure("width", width);
     }
 
-    function set_height(height) {
+    fn set_height(height) {
         node.configure("height", height);
     }
 
-    function background(color) {
+    fn background(color) {
         node.set_bg(color);
     }
 
-    function foreground(color) {
+    fn foreground(color) {
         node.configure("foreground", color);
     }
 }
 
 class Window extends Node {
 
-    function Window() {
+    fn Window() {
         node = new Graphic("Tk")
     }
 
-    function set_root(root) {
+    fn set_root(root) {
         root.node.call("grid", sticky=ALIGN_EXPAND);
     }
 
-    function set_menu(menu) {
+    fn set_menu(menu) {
         node.configure("menu", menu.node.tk);
     }
 
-    function show() {
+    fn show() {
         node.call("mainloop");
     }
 }
@@ -63,22 +63,22 @@ abstract class Container extends Node {
     var children = [];
     var alignment = ALIGN_WIDTH;
 
-    function Container(node) {
+    fn Container(node) {
         Node(node);
     }
 
-    function align(value) {
+    fn align(value) {
         alignment = value;
     }
 }
 
 class VBox extends Container {
 
-    function VBox(parent) {
+    fn VBox(parent) {
         Container(new Graphic("Frame", parent.node));
     }
 
-    function add(n) {
+    fn add(n) {
         n.node.call("grid", row=children.size(), column=0, sticky=alignment);
         children.append(n);
     }
@@ -87,11 +87,11 @@ class VBox extends Container {
 
 class HBox extends Container {
 
-    function HBox(parent) {
+    fn HBox(parent) {
         Container(new Graphic("Frame", parent.node));
     }
 
-    function add(n) {
+    fn add(n) {
         n.node.call("grid", row=0, column=children.size(), sticky=alignment);
         children.append(n);
     }
@@ -99,11 +99,11 @@ class HBox extends Container {
 
 
 abstract class LabelAble extends Node {
-    function set_text(text) {
+    fn set_text(text) {
         node.configure("text", text);
     }
 
-    function get_text() {
+    fn get_text() {
         return node.get("text");
     }
 }
@@ -111,7 +111,7 @@ abstract class LabelAble extends Node {
 
 class Label extends LabelAble {
 
-    function Label(parent, text="") {
+    fn Label(parent, text="") {
         Node(new Graphic("Label", parent.node));
         set_text(text);
     }
@@ -120,11 +120,11 @@ class Label extends LabelAble {
 
 class TextField extends Node {
 
-    function TextField(parent) {
+    fn TextField(parent) {
         Node(new Graphic("Entry", parent.node));
     }
 
-    function get() {
+    fn get() {
 
     }
 }
@@ -132,25 +132,25 @@ class TextField extends Node {
 
 class TextArea extends Node {
 
-    function TextArea(parent) {
+    fn TextArea(parent) {
         Node(new Graphic("Text", parent.node));
     }
 
-    function append_text(text, tag="") {
+    fn append_text(text, tag="") {
         node.call("insert", "end", text, tag);
         node.call("see", "end");
         update();
     }
 
-    function tag(tag_name, **kwargs) {
+    fn tag(tag_name, **kwargs) {
         node.call("tag_configure", tag_name, **kwargs);
     }
 
-    function clear() {
+    fn clear() {
         node.call("delete", "1.0", "end");
     }
 
-    function get_text() {
+    fn get_text() {
         return node.call("get", "1.0", "end");
     }
 }
@@ -158,12 +158,12 @@ class TextArea extends Node {
 
 class Button extends LabelAble {
 
-    function Button(parent, text="") {
+    fn Button(parent, text="") {
         Node(new Graphic("Button", parent.node));
         set_text(text);
     }
 
-    function callback(command, ftn) {
+    fn callback(command, ftn) {
         node.callback(command, ftn);
     }
 }
@@ -171,11 +171,11 @@ class Button extends LabelAble {
 
 class MenuBar extends Node {
 
-    function MenuBar(parent) {
+    fn MenuBar(parent) {
         Node(new Graphic("Menu", parent.node));
     }
 
-    function add_menu(menu, name) {
+    fn add_menu(menu, name) {
         node.call("add_cascade", label=name, menu=menu.node.tk);
     }
 }
@@ -183,16 +183,16 @@ class MenuBar extends Node {
 
 class Menu extends Node {
 
-    function Menu(parent) {
+    fn Menu(parent) {
         Node(new Graphic("Menu", parent.node));
         node.configure("tearoff", 0);
     }
 
-    function add_item(name, ftn) {
+    fn add_item(name, ftn) {
         node.call("add_command", label=name, command=ftn);
     }
 
-    function add_separator() {
+    fn add_separator() {
         node.call("add_separator");
     }
 }
@@ -200,34 +200,34 @@ class Menu extends Node {
 
 class TreeView extends Node {
 
-    function TreeView(parent) {
+    fn TreeView(parent) {
         Node(new Graphic("ttk.Treeview", parent.node));
     }
 
-    function columns(num_cols) {
+    fn columns(num_cols) {
         var cols = [];
-        for (var i = 1; i < num_cols; i++) {
+        for var i = 1; i < num_cols; i++ {
             cols.append("#" + string(i));
         }
         node.configure("columns", cols);
     }
 
-    function column_heading(index, name) {
+    fn column_heading(index, name) {
         var index_name = "#" + string(index);
         node.call("heading", index_name, text=name);
     }
 
-    function add_item(text, values, n) {
+    fn add_item(text, values, n) {
         return node.call("insert", n, "end", text=text, values=values);
     }
 
-    function column_width(index, width, min_width=0) {
+    fn column_width(index, width, min_width=0) {
         var index_name = "#" + string(index);
         node.call("column", index_name, width=width, minwidth=min_width);
     }
 }
 
 
-function ask_file_dialog(types={}) {
+fn ask_file_dialog(types={}) {
     return (new Graphic("Button", null)).file_dialog(types);
 }

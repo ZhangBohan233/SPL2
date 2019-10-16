@@ -6,8 +6,8 @@
 * Remove all duplicate operators
 * Manual memory management     ...discarded
 * Lambda expression     ...done
-* Anonymous class     .done
-* Remove heap scope
+* Anonymous class     ...done
+* Remove heap scope     ...done
 
 ===== 1.7 =====
 

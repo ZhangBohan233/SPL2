@@ -58,10 +58,10 @@ class Interpreter:
         # native_graphics = gra.NativeGraphics()
         os_ = lib.Os()
         self.env.define_const("Object", OBJECT, LINE_FILE)
-        self.env.add_heap("system", system)
-        self.env.add_heap("natives", natives)
-        self.env.add_heap("os", os_)
-        # self.env.add_heap("native_graphics", native_graphics)
+        self.env.add_global_const("system", system)
+        self.env.add_global_const("natives", natives)
+        self.env.add_global_const("os", os_)
+        # self.env.add_global_const()("native_graphics", native_graphics)
 
     def set_ast(self, ast_: ast.BlockStmt):
         """
@@ -110,31 +110,31 @@ def add_natives(env: Environment):
     :param env: the Environment
     :return: None
     """
-    env.add_heap("print", NativeFunction(print_, "print", True))
-    env.add_heap("println", NativeFunction(print_ln, "println", True))
-    env.add_heap("type", NativeFunction(typeof, "type"))
-    env.add_heap("pair", NativeFunction(lib.make_pair, "pair"))
-    env.add_heap("array", NativeFunction(lib.make_array, "array"))
-    env.add_heap("set", NativeFunction(lib.make_set, "set"))
-    env.add_heap("int", NativeFunction(lib.to_int, "int"))
-    env.add_heap("float", NativeFunction(lib.to_float, "float"))
-    env.add_heap("string", NativeFunction(to_str, "string"))
-    env.add_heap("repr", NativeFunction(to_repr, "repr"))
-    env.add_heap("input", NativeFunction(input_, "input", True))
-    env.add_heap("f_open", NativeFunction(f_open, "f_open", True))
-    env.add_heap("eval", NativeFunction(eval_, "eval", True))
-    env.add_heap("dir", NativeFunction(dir_, "dir", True))
-    env.add_heap("get_env", NativeFunction(get_env, "get_env", True))
-    env.add_heap("get_cwf", NativeFunction(get_cwf, "get_cwf"))
-    env.add_heap("main", NativeFunction(is_main, "main", True))
-    env.add_heap("exit", NativeFunction(lib.exit_, "exit"))
-    env.add_heap("help", NativeFunction(help_, "help", True))
-    env.add_heap("exec", NativeFunction(exec_, "exec", True))
-    env.add_heap("id", NativeFunction(id_, "id"))
+    env.add_global_const("print", NativeFunction(print_, "print", True))
+    env.add_global_const("println", NativeFunction(print_ln, "println", True))
+    env.add_global_const("type", NativeFunction(typeof, "type"))
+    env.add_global_const("pair", NativeFunction(lib.make_pair, "pair"))
+    env.add_global_const("array", NativeFunction(lib.make_array, "array"))
+    env.add_global_const("set", NativeFunction(lib.make_set, "set"))
+    env.add_global_const("int", NativeFunction(lib.to_int, "int"))
+    env.add_global_const("float", NativeFunction(lib.to_float, "float"))
+    env.add_global_const("string", NativeFunction(to_str, "string"))
+    env.add_global_const("repr", NativeFunction(to_repr, "repr"))
+    env.add_global_const("input", NativeFunction(input_, "input", True))
+    env.add_global_const("f_open", NativeFunction(f_open, "f_open", True))
+    env.add_global_const("eval", NativeFunction(eval_, "eval", True))
+    env.add_global_const("dir", NativeFunction(dir_, "dir", True))
+    env.add_global_const("get_env", NativeFunction(get_env, "get_env", True))
+    env.add_global_const("get_cwf", NativeFunction(get_cwf, "get_cwf"))
+    env.add_global_const("main", NativeFunction(is_main, "main", True))
+    env.add_global_const("exit", NativeFunction(lib.exit_, "exit"))
+    env.add_global_const("help", NativeFunction(help_, "help", True))
+    env.add_global_const("exec", NativeFunction(exec_, "exec", True))
+    env.add_global_const("id", NativeFunction(id_, "id"))
 
     # type of built-in
-    env.add_heap("boolean", NativeFunction(lib.to_boolean, "boolean"))
-    env.add_heap("void", NativeFunction(None, "void"))
+    env.add_global_const("boolean", NativeFunction(lib.to_boolean, "boolean"))
+    env.add_global_const("void", NativeFunction(None, "void"))
 
     env.define_const("String", lib.String, LINE_FILE)
     env.define_const("Array", lib.Array, LINE_FILE)
@@ -558,7 +558,7 @@ def print_ln(env: Environment, s="", stream=None):
     :param stream: the output stream, stdout as default
     """
     if stream is None:
-        stream = env.get_heap("system").stdout
+        stream = env.get_global_const("system").stdout
     print_(env, s, stream)
     print_(env, '\n', stream)
     flush: Function = stream.env.get("flush", LINE_FILE)
@@ -575,7 +575,7 @@ def print_(env: Environment, s, stream: ClassInstance = None):
     """
     # s2 = replace_bool_none(String(s).text__())
     if stream is None:
-        stream = env.get_heap("system").stdout
+        stream = env.get_global_const("system").stdout
     write: Function = stream.env.get("write", LINE_FILE)
     call_function([lib.String(s)], LINE_FILE, write, env)
 
@@ -590,7 +590,7 @@ def input_(env: Environment, prompt=lib.String("")):
     :param prompt: the prompt text to be shown to the user
     :return the user input, as <String>
     """
-    system = env.get_heap("system")
+    system = env.get_global_const("system")
     print_(env, prompt, system.stdout)
     flush: Function = system.stdout.env.get("flush", LINE_FILE)
     call_function([], LINE_FILE, flush, env)
@@ -697,7 +697,7 @@ def is_main(env: Environment, obj):
 
     :return: <true> iff the interpreter is working on the main script
     """
-    return obj == env.get_heap("system").argv[0].literal
+    return obj == env.get_global_const("system").argv[0].literal
 
 
 def f_open(env: Environment, file: lib.String, mode=lib.String("r"), encoding=lib.String("utf-8")):
@@ -710,7 +710,7 @@ def f_open(env: Environment, file: lib.String, mode=lib.String("r"), encoding=li
     :param encoding: the file's encoding, 'utf-8' as default
     :return: a reference to the File object
     """
-    full_path = lib.concatenate_path(str(file), str(env.get_heap("system").cwd))
+    full_path = lib.concatenate_path(str(file), str(env.get_global_const("system").cwd))
     try:
         if "b" not in mode:
             f = open(full_path, str(mode), encoding=str(encoding))
@@ -723,7 +723,7 @@ def f_open(env: Environment, file: lib.String, mode=lib.String("r"), encoding=li
 
 
 def exec_(env: Environment, *args):
-    path = str(env.get_heap("system").cwd)
+    path = str(env.get_global_const("system").cwd)
     if len(args) == 0:
         raise lib.ArgumentException("exec() takes at least one argument")
     elif len(args) == 1:
@@ -802,7 +802,7 @@ def help_(env: Environment, obj=None):
 
 
 def print_waring(env: Environment, msg: str):
-    print_ln(env, msg, env.get_heap("system").stderr)
+    print_ln(env, msg, env.get_global_const("system").stderr)
 
 
 def _get_class_doc(clazz: Class) -> str:

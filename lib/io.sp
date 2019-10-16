@@ -5,24 +5,24 @@ class TextInputStream extends InputStream {
 
     var fp = null;
 
-    function TextInputStream(file_name) {
+    fn TextInputStream(file_name) {
         fp = f_open(file_name, "r");
-        if (fp == -1) {
+        if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
     }
 
     @Override
-    function read() {
+    fn read() {
         return fp.read();
     }
 
-    function readline() {
+    fn readline() {
         return fp.readline();
     }
 
     @Override
-    function close() {
+    fn close() {
         return fp.close();
     }
 }
@@ -35,24 +35,24 @@ class FileInputStream extends InputStream {
 
     var fp = null;
 
-    function FileInputStream(file_name) {
+    fn FileInputStream(file_name) {
         fp = f_open(file_name, "rb");
-        if (fp == -1) {
+        if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
     }
 
     @Override
-    function read() {
+    fn read() {
         return fp.read();
     }
 
-    function read_one() {
+    fn read_one() {
         return fp.read_one();
     }
 
     @Override
-    function close() {
+    fn close() {
         return fp.close();
     }
 }
@@ -65,25 +65,25 @@ class TextOutputStream extends OutputStream {
 
     var fp = null;
 
-    function TextOutputStream(file_name) {
+    fn TextOutputStream(file_name) {
         fp = f_open(file_name, "w");
-        if (fp == -1) {
+        if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
     }
 
     @Override
-    function write(s) {
+    fn write(s) {
         return fp.write(s);
     }
 
     @Override
-    function flush() {
+    fn flush() {
         return fp.flush();
     }
 
     @Override
-    function close() {
+    fn close() {
         return fp.close();
     }
 }
@@ -96,39 +96,39 @@ class FileOutputStream extends OutputStream {
 
     var fp = null;
 
-    function FileOutputStream(file_name) {
+    fn FileOutputStream(file_name) {
         fp = f_open(file_name, "wb");
-        if (fp == -1) {
+        if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
     }
 
     @Override
-    function write(s) {
+    fn write(s) {
         return fp.write(s);
     }
 
     @Override
-    function flush() {
+    fn flush() {
         return fp.flush();
     }
 
     @Override
-    function close() {
+    fn close() {
         return fp.close();
     }
 }
 
 
 class IOException extends Exception {
-    function IOException(msg="") {
+    fn IOException(msg="") {
         Exception(msg);
     }
 }
 
 
 class FileNotFoundException extends IOException {
-    function FileNotFoundException(msg="") {
+    fn FileNotFoundException(msg="") {
         IOException(msg);
     }
 }

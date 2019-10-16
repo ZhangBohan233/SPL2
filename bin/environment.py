@@ -126,15 +126,6 @@ class Environment:
         """
         raise NotImplementedError
 
-    def _inner_get_heap(self, key):
-        raise NotImplementedError
-
-    def add_heap(self, k, v):
-        raise NotImplementedError
-
-    # def add_heap_ptr(self, k, v):
-    #     raise NotImplementedError
-
     def add_namespace(self, namespace):
         raise NotImplementedError
 
@@ -144,20 +135,17 @@ class Environment:
     def assign_namespace(self, key: str, value):
         raise NotImplementedError
 
-    def get_heap(self, class_name: str):
-        """
-        Returns the heap-variable corresponding to the key 'class_name'.
+    def add_global_const(self, key, value):
+        if self.is_global():
+            self.constants[key] = value
+        else:
+            self.outer.add_global_const(key, value)
 
-        This method will return the instance if the value stored in heap is a pointer.
-
-        :param class_name:
-        :return: the heap-variable corresponding to the key 'class_name'. Instance will be returned if the
-        value stored in heap is a pointer.
-        """
-        obj = self._inner_get_heap(class_name)
-        if obj is NULLPTR:
-            raise lib.NameException("Global name '{}' is not defined".format(class_name))
-        return obj
+    def get_global_const(self, key):
+        if self.is_global():
+            return self.constants[key]
+        else:
+            return self.outer.get_global_const(key)
 
     def terminate(self, exit_value):
         raise lib.SplException("Return outside function.")
@@ -272,7 +260,7 @@ class Environment:
             if key in out.variables:
                 return out.variables[key]
 
-        return self._inner_get_heap(key)
+        return NULLPTR
 
     def _local_contains(self, key: str) -> bool:
         """
@@ -309,7 +297,7 @@ class Environment:
         if v is not NULLPTR:
             return v
 
-        return self._inner_get_heap(key)
+        return NULLPTR
 
     def get(self, key: str, line_file: tuple):
         """
@@ -372,12 +360,6 @@ class MainAbstractEnvironment(Environment):
     def is_sub(self):
         return False
 
-    def add_heap(self, k, v):
-        raise NotImplementedError
-
-    def _inner_get_heap(self, key):
-        raise NotImplementedError
-
     def add_namespace(self, namespace: Environment):
         self.namespaces.add(namespace)
 
@@ -425,18 +407,11 @@ class SubAbstractEnvironment(Environment):
     def assign_namespace(self, key: str, value):
         return self.outer.assign_namespace(key, value)
 
-    def add_heap(self, k, v):
-        raise NotImplementedError
-
-    def _inner_get_heap(self, key):
-        raise NotImplementedError
-
 
 class GlobalEnvironment(MainAbstractEnvironment):
     def __init__(self):
         MainAbstractEnvironment.__init__(self, GLOBAL_SCOPE, None)
 
-        self.heap = {}
         self.modules = {}  # module path : Module objects
 
     def is_class(self):
@@ -444,15 +419,6 @@ class GlobalEnvironment(MainAbstractEnvironment):
 
     def is_global(self):
         return True
-
-    def add_heap(self, k, v):
-        if k in self.heap:
-            raise lib.NameException("Global name '{}' has already defined".format(k))
-        else:
-            self.heap[k] = v
-
-    def _inner_get_heap(self, key):
-        return self.heap[key] if key in self.heap else NULLPTR
 
     def find_module(self, file_path):
         """
@@ -483,12 +449,6 @@ class ModuleEnvironment(MainAbstractEnvironment):
     def is_class(self):
         return False
 
-    def _inner_get_heap(self, key):
-        return self.outer._inner_get_heap(key)
-
-    def add_heap(self, k, v):
-        self.outer.add_heap(k, v)
-
 
 class ClassEnvironment(MainAbstractEnvironment):
     def __init__(self, outer):
@@ -499,12 +459,6 @@ class ClassEnvironment(MainAbstractEnvironment):
 
     def is_global(self):
         return False
-
-    def add_heap(self, k, v):
-        self.outer.add_heap(k, v)
-
-    def _inner_get_heap(self, key):
-        return self.outer._inner_get_heap(key)
 
 
 class FunctionEnvironment(MainAbstractEnvironment):
@@ -529,12 +483,6 @@ class FunctionEnvironment(MainAbstractEnvironment):
 
     def is_terminated(self):
         return self.terminated
-
-    def add_heap(self, k, v):
-        self.outer.add_heap(k, v)
-
-    def _inner_get_heap(self, key):
-        return self.outer._inner_get_heap(key)
 
 
 class LoopEnvironment(SubAbstractEnvironment):
@@ -563,12 +511,6 @@ class LoopEnvironment(SubAbstractEnvironment):
     def pause_loop(self):
         self.paused = True
 
-    def add_heap(self, k, v):
-        self.outer.add_heap(k, v)
-
-    def _inner_get_heap(self, key):
-        return self.outer._inner_get_heap(key)
-
 
 class SubEnvironment(SubAbstractEnvironment):
     def __init__(self, outer):
@@ -591,9 +533,3 @@ class SubEnvironment(SubAbstractEnvironment):
 
     def pause_loop(self):
         self.outer.pause_loop()
-
-    def add_heap(self, k, v):
-        self.outer.add_heap(k, v)
-
-    def _inner_get_heap(self, key):
-        return self.outer._inner_get_heap(key)
