@@ -165,7 +165,7 @@ class String(NativeType, Iterable):
     def __init__(self, lit):
         NativeType.__init__(self)
 
-        self.literal = get_string_literal(lit)
+        self.literal: str = get_string_literal(lit)
 
     def __contains__(self, item):
         return item in self.literal
@@ -196,6 +196,9 @@ class String(NativeType, Iterable):
 
     def __getitem__(self, index):
         return self.literal[index]
+
+    def __float__(self):
+        return float(self.literal)
 
     def length(self):
         """
@@ -271,6 +274,17 @@ class String(NativeType, Iterable):
     @classmethod
     def type_name__(cls):
         return "String"
+
+    def split(self, pattern):
+        lst = [String(x) for x in self.literal.split(pattern.literal)]
+        return Array(*lst)
+
+    def is_number(self):
+        try:
+            float(self.literal)
+            return True
+        except ValueError:
+            return False
 
     def substring(self, from_, to=None):
         length = self.length()

@@ -57,11 +57,9 @@ class Interpreter:
         natives = NativeInvokes()
         # native_graphics = gra.NativeGraphics()
         os_ = lib.Os()
-        self.env.define_const("Object", OBJECT, LINE_FILE)
-        self.env.add_global_const("system", system)
-        self.env.add_global_const("natives", natives)
-        self.env.add_global_const("os", os_)
-        # self.env.add_global_const()("native_graphics", native_graphics)
+        self.env.define_const("system", system, LINE_FILE)
+        self.env.define_const("os", os_, LINE_FILE)
+        self.env.define_const("natives", natives, LINE_FILE)
 
     def set_ast(self, ast_: ast.BlockStmt):
         """
@@ -110,32 +108,29 @@ def add_natives(env: Environment):
     :param env: the Environment
     :return: None
     """
-    env.add_global_const("print", NativeFunction(print_, "print", True))
-    env.add_global_const("println", NativeFunction(print_ln, "println", True))
-    env.add_global_const("type", NativeFunction(typeof, "type"))
-    env.add_global_const("pair", NativeFunction(lib.make_pair, "pair"))
-    env.add_global_const("array", NativeFunction(lib.make_array, "array"))
-    env.add_global_const("set", NativeFunction(lib.make_set, "set"))
-    env.add_global_const("int", NativeFunction(lib.to_int, "int"))
-    env.add_global_const("float", NativeFunction(lib.to_float, "float"))
-    env.add_global_const("string", NativeFunction(to_str, "string"))
-    env.add_global_const("repr", NativeFunction(to_repr, "repr"))
-    env.add_global_const("input", NativeFunction(input_, "input", True))
-    env.add_global_const("f_open", NativeFunction(f_open, "f_open", True))
-    env.add_global_const("eval", NativeFunction(eval_, "eval", True))
-    env.add_global_const("dir", NativeFunction(dir_, "dir", True))
-    env.add_global_const("get_env", NativeFunction(get_env, "get_env", True))
-    env.add_global_const("get_cwf", NativeFunction(get_cwf, "get_cwf"))
-    env.add_global_const("main", NativeFunction(is_main, "main", True))
-    env.add_global_const("exit", NativeFunction(lib.exit_, "exit"))
-    env.add_global_const("help", NativeFunction(help_, "help", True))
-    env.add_global_const("exec", NativeFunction(exec_, "exec", True))
-    env.add_global_const("id", NativeFunction(id_, "id"))
+    env.define_const("print", NativeFunction(print_, "print", True), LINE_FILE)
+    env.define_const("println", NativeFunction(print_ln, "println", True), LINE_FILE)
+    env.define_const("type", NativeFunction(typeof, "type"), LINE_FILE)
+    env.define_const("pair", NativeFunction(lib.make_pair, "pair"), LINE_FILE)
+    env.define_const("array", NativeFunction(lib.make_array, "array"), LINE_FILE)
+    env.define_const("set", NativeFunction(lib.make_set, "set"), LINE_FILE)
+    env.define_const("int", NativeFunction(lib.to_int, "int"), LINE_FILE)
+    env.define_const("float", NativeFunction(lib.to_float, "float"), LINE_FILE)
+    env.define_const("string", NativeFunction(to_str, "string"), LINE_FILE)
+    env.define_const("repr", NativeFunction(to_repr, "repr"), LINE_FILE)
+    env.define_const("input", NativeFunction(input_, "input", True), LINE_FILE)
+    env.define_const("f_open", NativeFunction(f_open, "f_open", True), LINE_FILE)
+    env.define_const("eval", NativeFunction(eval_, "eval", True), LINE_FILE)
+    env.define_const("dir", NativeFunction(dir_, "dir", True), LINE_FILE)
+    env.define_const("get_env", NativeFunction(get_env, "get_env", True), LINE_FILE)
+    env.define_const("get_cwf", NativeFunction(get_cwf, "get_cwf"), LINE_FILE)
+    env.define_const("main", NativeFunction(is_main, "main", True), LINE_FILE)
+    env.define_const("exit", NativeFunction(lib.exit_, "exit"), LINE_FILE)
+    env.define_const("help", NativeFunction(help_, "help", True), LINE_FILE)
+    env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
+    env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
 
-    # type of built-in
-    env.add_global_const("boolean", NativeFunction(lib.to_boolean, "boolean"))
-    env.add_global_const("void", NativeFunction(None, "void"))
-
+    env.define_const("Object", OBJECT, LINE_FILE)
     env.define_const("String", lib.String, LINE_FILE)
     env.define_const("Array", lib.Array, LINE_FILE)
     env.define_const("Pair", lib.Pair, LINE_FILE)
@@ -151,8 +146,6 @@ def add_natives(env: Environment):
     env.define_const("Class", Class, LINE_FILE)
     env.define_const("Module", Module, LINE_FILE)
     env.define_const("Annotation", Annotation, LINE_FILE)
-
-    # global variables
 
 
 class NativeFunction:

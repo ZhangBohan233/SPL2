@@ -1,3 +1,19 @@
+********** SPL 2.0 Alpha 5 **********
+===== Build 0099 2019/10/19 =====
+
+* New library:
+    * stats.sp:
+        * Statistical classes and functions
+* New method of native types:
+    * String.split
+    * String.is_number
+* New method of built-in types:
+    * List.sublist
+* Environment optimization:
+    * Completely removed the heap-variable in global scope
+* Optimization:
+    * Removed the redundant NativeFunction's
+
 ********** SPL 2.0 Alpha 4 **********
 ===== Build 0098 2019/10/16 =====
 

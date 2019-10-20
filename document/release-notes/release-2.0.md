@@ -1,4 +1,4 @@
-# SPL 1.6 Release
+# SPL 2.0 Release
 
 Release date: 
 
@@ -25,9 +25,11 @@ var obj = new Object <- {
 }
 ```
 
-#### Environment optimization:
-* Removed the heap-variable in global scope
-
 #### Library Function Updates:
 * All functions with arguments set `iter, function` in `functions.sp` 
 now take the iterable as the first argument.
+
+## Optimizations:
+
+#### Environment optimization:
+* Removed the heap-variable in global scope

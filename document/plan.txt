@@ -8,6 +8,7 @@
 * Lambda expression     ...done
 * Anonymous class     ...done
 * Remove heap scope     ...done
+* Implement string in spl
 
 ===== 1.7 =====
 

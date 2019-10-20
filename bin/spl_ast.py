@@ -949,7 +949,9 @@ class AbstractSyntaxTree:
                 if len(block.lines) == 0:
                     raise stl.ParseException("Empty parenthesis")
                 else:
-                    raise stl.ParseException("Too many elements in parenthesis")
+                    raise stl.ParseException("Too many elements in parenthesis, in file '{}', at line {}".format(
+                        block.lines[-1].file, block.lines[-1].line_num
+                    ))
             self.stack.append(block.lines[0])
 
     def build_lambda_parameters(self):

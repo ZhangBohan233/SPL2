@@ -235,6 +235,17 @@ class List extends Iterable {
         this[dest] = temp;
     }
 
+    fn sublist(from, to=null) {
+        if to === null {
+            to = size();
+        }
+        lst := [];
+        for i := from; i < to; i++ {
+            lst.append(arr[i]);
+        }
+        return lst;
+    }
+
     fn to_array() {
         var s_arr = array(length=length);
         for var i = 0; i < length; i++ {
