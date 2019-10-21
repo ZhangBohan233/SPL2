@@ -1,3 +1,17 @@
+********** SPL 2.0 Alpha 6 **********
+===== Build 0100 2019/10/21 =====
+
+* Implemented "String" in spl:
+    * The python part is renamed to "CharArray"
+* Bug fixes:
+    * Fixed that the right side of "instanceof" not referencable in class itself
+    * Fixed a long existing bug: loops will continue execute lines after "break" or "continue"
+* New built-in function:
+    * round
+    * non_null_else
+* More spl exceptions
+* Even slower
+
 ********** SPL 2.0 Alpha 5 **********
 ===== Build 0099 2019/10/19 =====
 

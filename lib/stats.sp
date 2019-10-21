@@ -87,8 +87,8 @@ class LinearModel {
 
     fn summary() {
         println("Coefficients:");
-        println("Intercept %f".format(intercept));
-        println("Slope     %f".format(slope));
+        println("Intercept %4f".format(intercept));
+        println("Slope     %4f".format(slope));
         println("Multiple R-squared: %4f".format(r_squared));
         println("Residual standard error: %4f on %d degrees of freedom".format(rse, df));
     }
@@ -112,8 +112,4 @@ fn read_csv(file_name) {
         lst.append(seg);
     }
     return new DataSet(lst);
-}
-
-fn slr() {
-
 }

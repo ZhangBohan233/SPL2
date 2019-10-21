@@ -53,7 +53,7 @@ class Interpreter:
         """
         add_natives(self.env)
         # obj = lib.SplObject()
-        system = lib.System(lib.Array(*parse_args(self.argv)), lib.String(self.dir), self.encoding, self.in_out_err)
+        system = lib.System(lib.Array(*parse_args(self.argv)), lib.CharArray(self.dir), self.encoding, self.in_out_err)
         natives = NativeInvokes()
         # native_graphics = gra.NativeGraphics()
         os_ = lib.Os()
@@ -96,7 +96,7 @@ def parse_args(argv):
     :param argv: the system argv
     :return: the argv in spl String object
     """
-    return [lib.String(x) for x in argv]
+    return [lib.CharArray(x) for x in argv]
 
 
 def add_natives(env: Environment):
@@ -116,7 +116,7 @@ def add_natives(env: Environment):
     env.define_const("set", NativeFunction(lib.make_set, "set"), LINE_FILE)
     env.define_const("int", NativeFunction(lib.to_int, "int"), LINE_FILE)
     env.define_const("float", NativeFunction(lib.to_float, "float"), LINE_FILE)
-    env.define_const("string", NativeFunction(to_str, "string"), LINE_FILE)
+    env.define_const("chars", NativeFunction(to_chars, "chars"), LINE_FILE)
     env.define_const("repr", NativeFunction(to_repr, "repr"), LINE_FILE)
     env.define_const("input", NativeFunction(input_, "input", True), LINE_FILE)
     env.define_const("f_open", NativeFunction(f_open, "f_open", True), LINE_FILE)
@@ -131,7 +131,7 @@ def add_natives(env: Environment):
     env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
 
     env.define_const("Object", OBJECT, LINE_FILE)
-    env.define_const("String", lib.String, LINE_FILE)
+    env.define_const("CharArray", lib.CharArray, LINE_FILE)
     env.define_const("Array", lib.Array, LINE_FILE)
     env.define_const("Pair", lib.Pair, LINE_FILE)
     env.define_const("Set", lib.Set, LINE_FILE)
@@ -201,7 +201,7 @@ class Function(lib.NativeType):
         self.body = body
         self.outer_scope = outer
         self.abstract = abstract
-        self.doc = lib.String(doc)
+        self.doc = lib.CharArray(doc)
         self.file = None
         self.line_num = None
         self.clazz = None
@@ -225,7 +225,7 @@ class Class(lib.SplObject):
         self.body = body
         self.superclasses: [Class] = superclasses
         self.outer_env = outer_env
-        self.doc = lib.String(doc)
+        self.doc = lib.CharArray(doc)
         self.abstract = abstract
         # self.persists = ClassEnvironment(outer_env)
         self.line_num = line
@@ -253,7 +253,7 @@ class EnvWrapper(lib.NativeType):
         self.attrs = lib.Pair({})
         attrs = env.attributes()
         for key in attrs:
-            self.attrs[lib.String(key)] = attrs[key]
+            self.attrs[lib.CharArray(key)] = attrs[key]
 
     @classmethod
     def type_name__(cls) -> str:
@@ -315,7 +315,7 @@ class NativeInvokes(lib.NativeType):
         return "Natives"
 
     @staticmethod
-    def str_join(s: lib.String, itr):
+    def str_join(s: lib.CharArray, itr):
         """
         The native implementation of string join.
 
@@ -324,7 +324,7 @@ class NativeInvokes(lib.NativeType):
         :return: the joined string
         """
         if isinstance(itr, lib.Iterable):
-            return lib.String(s.literal.join([x.literal for x in itr]))
+            return lib.CharArray(s.literal.join([x.literal for x in itr]))
         else:
             raise lib.TypeException("Object '{}': {} is not a native-iterable object.".format(typeof(itr), itr))
 
@@ -409,7 +409,7 @@ class NativeInvokes(lib.NativeType):
             env = env.outer
         pair = lib.Pair({})
         for name in env.variables:
-            pair.put(lib.String(name), env.variables[name])
+            pair.put(lib.CharArray(name), env.variables[name])
         return pair
 
     @staticmethod
@@ -424,7 +424,7 @@ class NativeInvokes(lib.NativeType):
             env = env.outer
         pair = lib.Pair({})
         for name in env.constants:
-            pair.put(lib.String(name), env.constants[name])
+            pair.put(lib.CharArray(name), env.constants[name])
         return pair
 
     @staticmethod
@@ -481,7 +481,9 @@ class ClassInstance(lib.SplObject):
         if self.env.contains_key("__repr__"):
             func: Function = self.env.get("__repr__", LINE_FILE)
             result = call_function([], LINE_FILE, func, None)
-            return result.literal
+            if result.class_name != "String":
+                raise lib.TypeException("'__repr__' must return 'String' object")
+            return result.env.get("lit", LINE_FILE).literal
         else:
             return "<{} at {}>".format(self.class_name, self.id)
 
@@ -497,12 +499,26 @@ class ClassInstance(lib.SplObject):
     def __str__(self):
         if self.env.contains_key("__str__"):
             func: Function = self.env.get("__str__", LINE_FILE)
-            result = call_function([], LINE_FILE, func, None)
-            return result.literal
+            result: ClassInstance = call_function([], LINE_FILE, func, None)
+            if result.class_name != "String":
+                raise lib.TypeException("'__str__' must return 'String' object")
+            return result.env.get("lit", LINE_FILE).literal
         else:
             attr = self.env.attributes()
             attr.pop("this")
             return "<{} at {}>: {}".format(self.class_name, self.id, lib.make_pair(attr))
+
+    def __int__(self):
+        if self.class_name == "String":
+            return int(self.env.get("lit", LINE_FILE).literal)
+        else:
+            raise lib.TypeException("Class '{}' cannot be convert to int".format(self.class_name))
+
+    def __float__(self):
+        if self.class_name == "String":
+            return float(self.env.get("lit", LINE_FILE).literal)
+        else:
+            raise lib.TypeException("Class '{}' cannot be convert to float".format(self.class_name))
 
 
 class Module(lib.SplObject):
@@ -525,21 +541,24 @@ class SPLBaseException(Exception):
     def __str__(self):
         return self.exception.__str__()
 
+    def __repr__(self):
+        return str(self)
+
 
 # Native functions with dependencies
 
-def to_str(v) -> lib.String:
+def to_chars(v) -> lib.CharArray:
     if isinstance(v, ClassInstance):
-        return lib.String(str(v))
+        return lib.CharArray(str(v))
     else:
-        return lib.String(v)
+        return lib.CharArray(v)
 
 
-def to_repr(v) -> lib.String:
+def to_repr(v) -> lib.CharArray:
     if isinstance(v, ClassInstance):
-        return lib.String(repr(v))
+        return lib.CharArray(repr(v))
     else:
-        return lib.String(v)
+        return lib.CharArray(v)
 
 
 def print_ln(env: Environment, s="", stream=None):
@@ -570,10 +589,10 @@ def print_(env: Environment, s, stream: ClassInstance = None):
     if stream is None:
         stream = env.get_global_const("system").stdout
     write: Function = stream.env.get("write", LINE_FILE)
-    call_function([lib.String(s)], LINE_FILE, write, env)
+    call_function([lib.CharArray(s)], LINE_FILE, write, env)
 
 
-def input_(env: Environment, prompt=lib.String("")):
+def input_(env: Environment, prompt=lib.CharArray("")):
     """
     Asks input from user.
 
@@ -590,10 +609,10 @@ def input_(env: Environment, prompt=lib.String("")):
 
     readline: Function = system.stdin.env.get("readline", LINE_FILE)
     line = call_function([], LINE_FILE, readline, env)
-    return lib.String(line)
+    return lib.CharArray(line)
 
 
-def typeof(obj) -> lib.String:
+def typeof(obj) -> lib.CharArray:
     """
     Returns the type name of an object.
 
@@ -601,19 +620,19 @@ def typeof(obj) -> lib.String:
     :return: the name of the type
     """
     if obj is None:
-        return lib.String("void")
+        return lib.CharArray("void")
     elif isinstance(obj, ClassInstance):
-        return lib.String(obj.class_name)
+        return lib.CharArray(obj.class_name)
     elif isinstance(obj, bool):
-        return lib.String("boolean")
+        return lib.CharArray("boolean")
     elif isinstance(obj, lib.NativeType):
-        return lib.String(obj.type_name__())
+        return lib.CharArray(obj.type_name__())
     else:
         t = type(obj)
-        return lib.String(t.__name__)
+        return lib.CharArray(t.__name__)
 
 
-def eval_(env: Environment, expr: lib.String) -> ast.BlockStmt:
+def eval_(env: Environment, expr: lib.CharArray) -> ast.BlockStmt:
     """
     Evaluates a <String> as an expression.
 
@@ -681,7 +700,7 @@ def get_cwf(obj: str):
     :param obj:
     :return: the name of current working spl script
     """
-    return lib.String(obj)
+    return lib.CharArray(obj)
 
 
 def is_main(env: Environment, obj):
@@ -693,7 +712,7 @@ def is_main(env: Environment, obj):
     return obj == env.get_global_const("system").argv[0].literal
 
 
-def f_open(env: Environment, file: lib.String, mode=lib.String("r"), encoding=lib.String("utf-8")):
+def f_open(env: Environment, file: ClassInstance, mode: ClassInstance = None, encoding: ClassInstance = None):
     """
     Opens a file and returns the File object.
 
@@ -703,10 +722,25 @@ def f_open(env: Environment, file: lib.String, mode=lib.String("r"), encoding=li
     :param encoding: the file's encoding, 'utf-8' as default
     :return: a reference to the File object
     """
+    if mode is None:
+        mode_s = "r"
+    elif mode.class_name != "String":
+        raise lib.TypeException("Unexpected type for argument")
+    else:
+        mode_s = mode.env.get("lit", LINE_FILE)
+    if encoding is None:
+        enc_s = "utf-8"
+    elif encoding.class_name != "String":
+        raise lib.TypeException("Unexpected type for argument")
+    else:
+        enc_s = encoding.env.get("lit", LINE_FILE)
+    if file.class_name != "String":
+        raise lib.TypeException("Unexpected type for argument")
+
     full_path = lib.concatenate_path(str(file), str(env.get_global_const("system").cwd))
     try:
-        if "b" not in mode:
-            f = open(full_path, str(mode), encoding=str(encoding))
+        if "b" not in mode_s:
+            f = open(full_path, str(mode), encoding=str(enc_s))
         else:
             f = open(full_path, str(mode))
         file = lib.File(f, str(mode))
@@ -720,7 +754,7 @@ def exec_(env: Environment, *args):
     if len(args) == 0:
         raise lib.ArgumentException("exec() takes at least one argument")
     elif len(args) == 1:
-        if isinstance(args[0], lib.String):
+        if isinstance(args[0], lib.CharArray):
             line = str(args[0])
             return _exec_line(line, path)
         elif isinstance(args[0], lib.Array):
@@ -729,7 +763,7 @@ def exec_(env: Environment, *args):
         else:
             raise lib.TypeException("Unknown argument type of exec()")
     elif len(args) == 2:
-        if isinstance(args[0], lib.String) and isinstance(args[1], lib.Array):
+        if isinstance(args[0], lib.CharArray) and isinstance(args[1], lib.Array):
             line = str(args[0]) + " " + " ".join(str(x) for x in args[1])
             return _exec_line(line, path)
         else:
@@ -838,10 +872,10 @@ def _exec_line(line: str, path: str):
     return result
 
 
-def _run_spl_script(env: Environment, path: lib.String):
+def _run_spl_script(env: Environment, path: lib.CharArray):
     spl_path = script.get_spl_path() + os.sep + script.SPL_NAME
     cmd = "python {} {}".format(spl_path, path)
-    return exec_(env, lib.String(cmd))
+    return exec_(env, lib.CharArray(cmd))
 
 
 # Interpreter
@@ -854,7 +888,7 @@ def eval_for_loop(node: ast.ForLoopStmt, env: Environment):
     step = con.lines[2]
 
     title_scope = LoopEnvironment(env)
-    block_scope = LoopEnvironment(title_scope)
+    block_scope = SubEnvironment(title_scope)
 
     result = evaluate(start, title_scope)
 
@@ -878,7 +912,7 @@ def eval_for_loop(node: ast.ForLoopStmt, env: Environment):
 
 
 def loop_spl_iterator(iterator: ClassInstance, invariant: str, body: ast.Node,
-                      title_scope: LoopEnvironment, block_scope: LoopEnvironment, lf: tuple):
+                      title_scope: LoopEnvironment, block_scope: SubEnvironment, lf: tuple):
     next_func = iterator.env.get("__next__", lf)
     has_next_func = iterator.env.get("__more__", lf)
     result = None
@@ -904,7 +938,7 @@ def eval_for_each_loop(node: ast.ForLoopStmt, env: Environment):
 
     title_scope = LoopEnvironment(env)
 
-    block_scope = LoopEnvironment(title_scope)
+    block_scope = SubEnvironment(title_scope)
 
     if inv.node_type == ast.NAME_NODE:
         inv: ast.NameNode
@@ -1371,7 +1405,7 @@ def call_kw_unpack(name: str, kwargs: dict, scope: Environment, call_env: Enviro
     for k in kwargs:
         v = kwargs[k]
         e = evaluate(v, call_env)
-        pair[lib.String(k)] = e
+        pair[lib.CharArray(k)] = e
 
     scope.define_var(name, pair, lf)
 
@@ -1419,7 +1453,7 @@ def get_node_in_annotation(node: ast.AnnotationNode, env: Environment, ann_list:
         content = evaluate(node.args, env)
     else:
         content = None
-    ann = Annotation(lib.String(node.name), content)
+    ann = Annotation(lib.CharArray(node.name), content)
     ann_list.append(ann)
     if isinstance(node.body, ast.AssignmentNode):
         if isinstance(node.body.right, ast.DefStmt) and node.body.level == ast.FUNC_DEFINE:
@@ -1446,7 +1480,7 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             return primitive_arithmetic(left, right, symbol)
         elif isinstance(left, int) or isinstance(left, float):
             return num_arithmetic(left, right, symbol)
-        elif isinstance(left, lib.String):
+        elif isinstance(left, lib.CharArray):
             return string_arithmetic(left, right, symbol)
         elif isinstance(left, lib.NativeType):  # NativeTypes other than String
             return native_arithmetic(left, right, symbol)
@@ -1459,7 +1493,7 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
 
 
 def class_arithmetic(left: Class, right, symbol, env: Environment, right_node):
-    if symbol == "===" or symbol == "is":
+    if symbol == "===":
         return isinstance(right, Class) and left.id == right.id
     elif symbol == "!==":
         return not isinstance(right, Class) or left.id != right.id
@@ -1482,6 +1516,8 @@ def instance_arithmetic(left: ClassInstance, right, symbol, env: Environment):
     elif symbol == "instanceof":
         if isinstance(right, Class):
             return is_subclass_of(env.get_class(left.class_name), right)
+        elif isinstance(right, Function):
+            return is_subclass_of(env.get_class(left.class_name), right.clazz)
         else:
             return False
     else:
@@ -1489,9 +1525,6 @@ def instance_arithmetic(left: ClassInstance, right, symbol, env: Environment):
         call_obj = ast.NameNode(LINE_FILE, op_name)
         if not left.env.contains_key(op_name):
             raise lib.AttributeException("Class '{}' does not support operation '{}'".format(left.class_name, symbol))
-        # block = ast.BlockStmt(LINE_FILE)
-        # block.add_line(right)
-        # func: Function = left.env.get(fc.f_name, LINE_FILE)
         func: Function = evaluate(call_obj, left.env)
         result = call_function([right], LINE_FILE, func, env)
         return result
@@ -1890,8 +1923,8 @@ def eval_assert(node: ast.Node, env: Environment):
     if result is not True:
         lf = node.line_num, node.file
         throw_spl_exception("AssertionException", lf, env, [
-            lib.String("Assertion failed on expression '{}', in file '{}', at line {}"
-                       .format(node, node.file, node.line_num))
+            lib.CharArray("Assertion failed on expression '{}', in file '{}', at line {}"
+                          .format(node, node.file, node.line_num))
         ])
 
 
@@ -2056,7 +2089,7 @@ def eval_ann_node(node: ast.AnnotationNode, env: Environment):
 
 # Operation table of every non-abstract node types
 NODE_TABLE = {
-    ast.LITERAL_NODE: lambda n, env: lib.String(n.literal),
+    ast.LITERAL_NODE: lambda n, env: lib.CharArray(n.literal),
     ast.NAME_NODE: lambda n, env: env.get(n.name, (n.line_num, n.file)),
     ast.BREAK_STMT: lambda n, env: env.break_loop(),
     ast.CONTINUE_STMT: lambda n, env: env.pause_loop(),
@@ -2093,6 +2126,8 @@ def evaluate(node: ast.Node, env: Environment):
     """
     if env.is_terminated():
         return env.terminate_value()
+    if env.is_broken_or_paused():
+        return
     if isinstance(node, ast.Node):
         t = node.node_type
         node.execution += 1
@@ -2105,12 +2140,12 @@ def evaluate(node: ast.Node, env: Environment):
 # Processes before run
 
 
-def string_run(self: lib.String, env):
+def string_run(self: lib.CharArray, env):
     result = _run_spl_script(env, self)
     return result
 
 
-lib.String.__run__ = string_run
+lib.CharArray.__run__ = string_run
 
 OBJECT_DOC = """
 The superclass of all spl object.

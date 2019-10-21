@@ -35,6 +35,20 @@ class AnnotationException extends Exception {
 }
 
 
+class IndexException extends Exception {
+    fn IndexException(msg="") {
+        Exception(msg);
+    }
+}
+
+
+class ObjectTypeException extends Exception {
+    fn ObjectTypeException(msg="") {
+        Exception(msg);
+    }
+}
+
+
 /*
  * A superclass of all iterator classes.
  */
@@ -133,6 +147,170 @@ class NativeOutputStream extends OutputStream {
     @Override
     fn close() {
         ns.close();
+    }
+}
+
+
+class String {
+    var lit;  // CharArray
+
+    fn String(lit) {
+        if lit instanceof String {
+            this.lit = lit.lit;
+        } else if lit instanceof CharArray {
+            this.lit = lit;
+        } else {
+            this.lit = chars(lit);
+        }
+    }
+
+    fn contains(pattern) {
+        p_len := pattern.length();
+        len := length();
+        for i := 0; i < len - p_len; i++ {
+            var j;
+            for j = 0; j < p_len; j++ {
+                if __getitem__(i + j) != pattern[j] {
+                    break;
+                }
+            }
+            if j == p_len {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    fn format(*args) {
+        arg_len := args.size();
+        len := length();
+        lst := [];
+        i := 0;
+        count := 0;
+        while i < len {
+            ch := this[i];
+            if ch == "%" {
+                j := i + 1;
+                params := [];
+                while !this[j].is_alpha() {
+                    params.append(this[j]);
+                    j++;
+                }
+                if count >= arg_len {
+                    throw new IndexException("Not enough arguments for string format");
+                }
+                flag := this[j];
+                if flag == "s" {
+                    literal := args[count];
+                    lst.append(literal)
+                } else if flag == "d" {
+                    lst.append(string(int(args[count])));
+                } else if flag == "f" {
+                    if params.size() > 0 {
+                        precision := int(params[0]);
+                        lst.append(string(round(args[count], precision)));
+                    } else {
+                        lst.append(string(args[count]));
+                    }
+                } else if flag == "r" {
+                    literal := args[count];
+                    lst.append(string(literal));
+                } else {
+                    lst.append("%");
+                    i = j;
+                    continue;
+                }
+                i = j + 1;
+                count++;
+                continue;
+            }
+            lst.append(ch);
+            i++;
+        }
+        return "".join(lst);
+    }
+
+    fn is_alpha() {
+        return lit.is_alpha();
+    }
+
+    fn is_number() {
+        try {
+            __float__();
+            return true;
+        } catch e : Exception {
+            return false;
+        }
+    }
+
+    fn join(iter) {
+        lst := [];
+        for var seg; iter {
+            lst.append(seg.lit);
+        }
+        return new String(natives.str_join("".lit, lst.to_array()));
+    }
+
+    fn length() {
+        return lit.length();
+    }
+
+    fn split(pattern) {
+        lst := [];
+        j := 0;
+        len := length();
+        for i := 0; i < len; i++ {
+            if __getitem__(i) == pattern {
+                seg := substring(j, i);
+                lst.append(seg);
+                j = i + 1;
+            }
+        }
+        lst.append(substring(j, len));
+        return lst;
+    }
+
+    fn substring(from, to=null) {
+        if to == null {
+            to = length();
+        }
+        return new String(lit.substring(from, to));
+    }
+
+    fn __add__(other) {
+        if other instanceof String {
+            return new String(lit + other.lit);
+        } else {
+            throw new ObjectTypeException("String adder must be String");
+        }
+    }
+
+    fn __eq__(other) {
+        return other instanceof String && lit == other.lit;
+    }
+
+    fn __float__() {
+        return float(lit);
+    }
+
+    fn __getitem__(index) {
+        return new String(lit[index]);
+    }
+
+    fn __hash__() {
+        return lit.__hash__();
+    }
+
+    fn __neq__(other) {
+        return !(this == other);
+    }
+
+    fn __str__() {
+        return this;
+    }
+
+    fn __repr__() {
+        return this;
     }
 }
 
@@ -277,6 +455,41 @@ class List extends Iterable {
  */
 fn list(*args) {
     return new List(*args);
+}
+
+/*
+ * Returns a new <String> instance, with literal `lit`
+ */
+fn string(lit) {
+    return new String(lit);
+}
+
+/*
+ * Returns the rounded number, with floor mode.
+ */
+fn round(num, precision=0) {
+    if precision == 0 {
+        return int(num);
+    } else {
+        n := 1;
+        for i := 0; i < precision; i++ {
+            n *= 10;
+        }
+        return float(int(num * n)) / n;
+    }
+}
+
+/*
+ * Returns the ftn(object) if the object <obj> is not null. Otherwise, return null.
+ */
+fn non_null_else(obj, alter, ftn=null) {
+    if obj === null {
+        return null;
+    } else if ftn === null {
+        return obj;
+    } else {
+        return ftn(obj);
+    }
 }
 
 /*

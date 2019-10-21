@@ -75,7 +75,7 @@ def get_string_literal(lit) -> str:
         return "null"
     elif isinstance(lit, bool):
         return "true" if lit else "false"
-    elif isinstance(lit, String):
+    elif isinstance(lit, CharArray):
         return lit.literal
     else:
         return str(lit)
@@ -88,7 +88,7 @@ def get_string_repr(o) -> str:
         return "true" if o else "false"
     elif isinstance(o, int) or isinstance(o, float):
         return str(o)
-    elif isinstance(o, String):
+    elif isinstance(o, CharArray):
         return "'" + o.__repr__() + "'"
     else:
         return repr(o)
@@ -157,7 +157,7 @@ class Iterable:
         raise NotImplementedError
 
 
-class String(NativeType, Iterable):
+class CharArray(NativeType, Iterable):
     """
     An object of a string literal.
     """
@@ -180,7 +180,7 @@ class String(NativeType, Iterable):
         return self.__str__()
 
     def __eq__(self, other):
-        return isinstance(other, String) and self.literal == other.literal
+        return isinstance(other, CharArray) and self.literal == other.literal
 
     def __hash__(self):
         return hash(self.literal)
@@ -189,16 +189,22 @@ class String(NativeType, Iterable):
         return not self.__eq__(other)
 
     def __add__(self, other):
-        if isinstance(other, String):
-            return String(self.literal + other.literal)
+        if isinstance(other, CharArray):
+            return CharArray(self.literal + other.literal)
         else:
-            raise TypeException("Cannot add <String> with <{}>".format(type(other).__name__))
+            raise TypeException("Cannot add <CharArray> with <{}>".format(type(other).__name__))
 
     def __getitem__(self, index):
-        return self.literal[index]
+        return CharArray(self.literal[index])
+
+    def __int__(self):
+        return int(self.literal)
 
     def __float__(self):
         return float(self.literal)
+
+    def is_alpha(self):
+        return self.literal.isalpha()
 
     def length(self):
         """
@@ -208,90 +214,15 @@ class String(NativeType, Iterable):
         """
         return len(self.literal)
 
-    def contains(self, char):
-        """
-        Returns whether the <char> is a substring of this <String>.
-
-        :param char: the character or string to look for
-        :return: <true> iff the <char> is a substring of this <String>
-        """
-        return char.literal in self.literal
-
-    def format(self, *args):
-        """
-        Formats this string with the specified format.
-
-        :param args: the formats
-        :return: the formatted string
-        """
-        lst = []
-        i = 0
-        count = 0
-        while i < self.length():
-            ch = self.literal[i]
-            if ch == "%":
-                j = i + 1
-                params = []
-                while not self.literal[j].isalpha():
-                    params.append(self.literal[j])
-                    j += 1
-                if count >= len(args):
-                    raise IndexOutOfRangeException("Not enough arguments for string format")
-                flag = self.literal[j]
-                if flag == "s":
-                    lit = args[count]
-                    try:
-                        lst.append(lit.literal)
-                    except AttributeError:
-                        raise StringFormatException("Cannot resolve type '{}' with symbol '%s'"
-                                                    .format(type(lit).__name__))
-                elif flag == "d":
-                    lst.append(str(int(args[count])))
-                elif flag == "f":
-                    if len(params) > 0:
-                        precision = int(params[0])
-                        lst.append(str(round(args[count], precision)))
-                    else:
-                        lst.append(str(args[count]))
-                elif flag == "r":
-                    lit = args[count]
-                    lst.append(str(lit))
-                else:
-                    # print_waring("Warning: Unknown flag: %" + flag)
-                    lst.append("%")
-                    i = j
-                    continue
-                i = j + 1
-                count += 1
-                continue
-            lst.append(ch)
-            i += 1
-
-        # if count < len(args):
-        #     print_waring("Warning: too much arguments for string format")
-        return String("".join(lst))
-
     @classmethod
     def type_name__(cls):
-        return "String"
+        return "CharArray"
 
-    def split(self, pattern):
-        lst = [String(x) for x in self.literal.split(pattern.literal)]
-        return Array(*lst)
-
-    def is_number(self):
-        try:
-            float(self.literal)
-            return True
-        except ValueError:
-            return False
-
-    def substring(self, from_, to=None):
+    def substring(self, from_, to):
         length = self.length()
-        end = length if to is None else to
-        if from_ < 0 or end > length:
+        if from_ < 0 or to > length:
             raise IndexOutOfRangeException("Substring index out of range")
-        return String(self.literal[from_: end])
+        return CharArray(self.literal[from_: to])
 
 
 class PyInputStream(NativeType):
@@ -347,7 +278,7 @@ class Array(NativeType, Iterable):
         return (x for x in self.list)
 
     def __str__(self):
-        return str([String(get_string_repr(v)) for v in self.list])
+        return str([CharArray(get_string_repr(v)) for v in self.list])
 
     def __repr__(self):
         return self.__str__()
@@ -392,7 +323,7 @@ class Pair(NativeType, Iterable):
         return (k for k in self.pair)
 
     def __str__(self):
-        return str({String(get_string_repr(k)): String(get_string_repr(self.pair[k])) for k in self.pair})
+        return str({CharArray(get_string_repr(k)): CharArray(get_string_repr(self.pair[k])) for k in self.pair})
 
     def __repr__(self):
         return self.__str__()
@@ -430,7 +361,7 @@ class Set(NativeType, Iterable):
         return (v for v in self.set)
 
     def __str__(self):
-        return str(set([String(get_string_repr(v)) for v in self.set]))
+        return str(set([CharArray(get_string_repr(v)) for v in self.set]))
 
     def __repr__(self):
         return self.__str__()
@@ -480,7 +411,7 @@ class System(NativeType):
     """
 
     argv: Array
-    cwd: String
+    cwd: CharArray
     encoding: str
     native_in = None
     native_out = None
@@ -489,7 +420,7 @@ class System(NativeType):
     stderr = None  # ClassInstance <NativeOutputStream>
     stdin = None  # ClassInstance <NativeInputStream>
 
-    def __init__(self, argv_: Array, directory: String, enc: str, in_out_err):
+    def __init__(self, argv_: Array, directory: CharArray, enc: str, in_out_err):
         NativeType.__init__(self)
 
         self.native_in = PyInputStream(in_out_err[0])
@@ -539,8 +470,8 @@ class Os(NativeType):
         name: the name of the os
         separator: the default path separator of the os
     """
-    name = String(os.name)
-    separator = String(os.sep)
+    name = CharArray(os.name)
+    separator = CharArray(os.sep)
 
     def __init__(self):
         NativeType.__init__(self)
@@ -580,7 +511,7 @@ class File(NativeType):
         r = self.fp.read(1)
         if r:
             if self.mode == "r":
-                return String(r)
+                return CharArray(r)
             elif self.mode == "rb":
                 return int(self.fp.read(1)[0])
             else:
@@ -595,7 +526,7 @@ class File(NativeType):
         :return: all contents of this file
         """
         if self.mode == "r":
-            return String(self.fp.read())
+            return CharArray(self.fp.read())
         elif self.mode == "rb":
             return Array(*list(self.fp.read()))
         else:
@@ -612,7 +543,7 @@ class File(NativeType):
         if self.mode == "r":
             s = self.fp.readline()
             if s:
-                return String(s)
+                return CharArray(s)
             else:
                 return None
         else:

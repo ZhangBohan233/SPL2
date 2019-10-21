@@ -6,7 +6,7 @@ import tkinter.ttk
 
 
 class Graphic(lib.NativeType):
-    def __init__(self, name: lib.String, parent=None):
+    def __init__(self, name: lib.CharArray, parent=None):
         lib.NativeType.__init__(self)
 
         if len(name.literal) > 4 and name.literal[:4] == "ttk.":
@@ -22,21 +22,21 @@ class Graphic(lib.NativeType):
     def type_name__(cls) -> str:
         return "Graphic"
 
-    def set_bg(self, color: lib.String):
+    def set_bg(self, color: lib.CharArray):
         self.tk.configure(bg=color.literal)
 
-    def configure(self, env, key: lib.String, value):
+    def configure(self, env, key: lib.CharArray, value):
         v = proceed_function(value, env)
         cfg = {key.literal: v}
         self.tk.configure(cfg)
 
-    def get(self, key: lib.String):
+    def get(self, key: lib.CharArray):
         return self.tk[key.literal]
 
-    def set_attr(self, attr: lib.String, value):
+    def set_attr(self, attr: lib.CharArray, value):
         setattr(self.tk, attr.literal, value)
 
-    def callback(self, env, cmd: lib.String, ftn):
+    def callback(self, env, cmd: lib.CharArray, ftn):
         cfg = {cmd.literal: proceed_function(ftn, env)}
         self.tk.configure(cfg)
 
@@ -44,9 +44,9 @@ class Graphic(lib.NativeType):
     def file_dialog(types: lib.Pair):
         res = filedialog.askopenfilename(filetypes=[(str(types[ext]), str(ext)) for ext in types])
         if res is not None:
-            return lib.String(res)
+            return lib.CharArray(res)
 
-    def call(self, env, func_name: lib.String, *args, **kwargs):
+    def call(self, env, func_name: lib.CharArray, *args, **kwargs):
         func = getattr(self.tk, func_name.literal)
         args2 = []
         kwargs2 = {}
@@ -56,7 +56,7 @@ class Graphic(lib.NativeType):
             kwargs2[str(k)] = proceed_function(kwargs[k], env)
         res = func(*args2, **kwargs2)
         if isinstance(res, str):
-            return lib.String(res)
+            return lib.CharArray(res)
         else:
             return res
 
@@ -64,7 +64,7 @@ class Graphic(lib.NativeType):
 def proceed_function(ftn, env):
     if type(ftn).__name__ == "Function":
         return lambda: inter.call_function([], (0, "callback"), ftn, env)
-    elif isinstance(ftn, lib.String):
+    elif isinstance(ftn, lib.CharArray):
         return str(ftn)
     elif isinstance(ftn, lib.Array):
         return ftn.list

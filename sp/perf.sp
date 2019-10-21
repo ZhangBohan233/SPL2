@@ -67,4 +67,12 @@ if main() {
     const t5 = system.time();
     print("object: ");
     println(t5 - t4);
+
+    var s = "";
+    for i := 0; i < 1000; i++ {
+        s += "a";
+    }
+    const t6 = system.time();
+    print("string: ");
+    println(t6 - t5);
 }

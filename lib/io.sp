@@ -14,11 +14,11 @@ class TextInputStream extends InputStream {
 
     @Override
     fn read() {
-        return fp.read();
+        return non_null_else(fp.read(), null, string);
     }
 
     fn readline() {
-        return fp.readline();
+        return non_null_else(fp.readline(), null, string);
     }
 
     @Override

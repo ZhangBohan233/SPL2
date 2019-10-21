@@ -28,7 +28,7 @@ class Undefined:
 
 
 class Annotation(lib.NativeType):
-    def __init__(self, name: lib.String, content: lib.Pair = None):
+    def __init__(self, name: lib.CharArray, content: lib.Pair = None):
         lib.NativeType.__init__(self)
         self.name = name
         self.params = content
@@ -56,8 +56,8 @@ class Annotation(lib.NativeType):
 NULLPTR = NullPointer()
 UNDEFINED = Undefined()
 
-SUPPRESS = Annotation(lib.String("Suppress"))
-OVERRIDE = Annotation(lib.String("Override"))
+SUPPRESS = Annotation(lib.CharArray("Suppress"))
+OVERRIDE = Annotation(lib.CharArray("Override"))
 
 
 class Environment:
@@ -165,6 +165,9 @@ class Environment:
         :return: the terminate value
         """
         raise lib.SplException("Terminate value outside function.")
+
+    def is_broken_or_paused(self):
+        return False
 
     def break_loop(self):
         raise lib.SplException("Break not inside loop.")
@@ -505,6 +508,9 @@ class LoopEnvironment(SubAbstractEnvironment):
     def is_terminated(self):
         return self.outer.is_terminated()
 
+    def is_broken_or_paused(self):
+        return self.broken or self.paused
+
     def break_loop(self):
         self.broken = True
 
@@ -527,6 +533,9 @@ class SubEnvironment(SubAbstractEnvironment):
 
     def is_terminated(self):
         return self.outer.is_terminated()
+
+    def is_broken_or_paused(self):
+        return self.outer.is_broken_or_paused()
 
     def break_loop(self):
         self.outer.break_loop()

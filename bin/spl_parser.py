@@ -231,18 +231,13 @@ class Parser:
                             # parser.add_abstract(line)
                     elif sym == "new":
                         parser.add_unary(line, "new")
-                        # parser.add_class_new(line)
                     elif sym == "throw":
                         parser.add_unary(line, "throw")
-                        # parser.add_throw(line)
                     elif sym == "try":
                         parser.add_try(line)
                     elif sym == "catch":
                         parser.add_catch(line)
                         is_conditional = True
-                        # i += 1
-                        # cond_nest_list.append(par_count)
-                        # par_count += 1
                     elif sym == "finally":
                         parser.add_finally(line)
                     elif sym == "assert":
@@ -309,7 +304,11 @@ class Parser:
                     parser.add_number(line, value)
                 elif isinstance(token, stl.LiteralToken):
                     value = token.text
+                    func_name = "string"
+                    parser.add_name(line, func_name)
+                    parser.add_call(line)
                     parser.add_literal(line, value)
+                    parser.build_call()
                 elif isinstance(token, stl.DocToken):
                     pass
                 elif token.is_eof():
