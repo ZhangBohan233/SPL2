@@ -7,7 +7,7 @@ class NotAJSONObjectException extends Exception {
     }
 }
 
-fn to_json(obj) {
+fn toJson(obj) {
     if obj instanceof Pair {
         var sb = new util.StringBuilder();
         sb.append('{');
@@ -42,14 +42,14 @@ fn to_json(obj) {
     }
 }
 
-fn read_file(name) {
+fn readFile(name) {
     var stream = new io.TextInputStream(name);
     var text = stream.read();
     stream.close();
     return from_string(text);
 }
 
-fn write_file(json_obj, file_name) {
+fn writeFile(json_obj, file_name) {
     var stream = new io.TextOutputStream(file_name);
     var text;
     if json_obj instanceof Pair {
@@ -61,7 +61,7 @@ fn write_file(json_obj, file_name) {
     stream.close();
 }
 
-fn from_string(content) {
+fn fromString(content) {
     var p = eval(content);
     return p;
 }

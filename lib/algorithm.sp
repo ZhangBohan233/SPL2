@@ -1,7 +1,7 @@
 import "math"
 
 
-fn bubble_sort(lst) {
+fn bubbleSort(lst) {
     const length = lst.size();
     for var i = 0; i < length; i++ {
         var swaps = 0;
@@ -18,7 +18,7 @@ fn bubble_sort(lst) {
 }
 
 
-fn gnome_sort(lst) {
+fn gnomeSort(lst) {
     const length = lst.size();
 
 }
@@ -27,7 +27,7 @@ fn gnome_sort(lst) {
 /*
  * Sorts the <lst> with merge sort algorithm.
  */
-fn merge_sort(lst) {
+fn mergeSort(lst) {
     const length = lst.size();
     var step = 1;
     while step < length {
@@ -80,7 +80,7 @@ fn merge_sort(lst) {
 /*
  * Returns a list with length <length> containing random integers in range [min, max].
  */
-fn rand_list(length, min, max) {
+fn randList(length, min, max) {
     var lst = [];
     var r = max - min;
     for var i = 0; i < length; i += 1 {

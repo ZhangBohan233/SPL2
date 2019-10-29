@@ -450,6 +450,15 @@ class List extends Iterable {
 }
 
 
+fn input(prompt=null) {
+    if prompt === null {
+        return new String(natives.input());
+    } else {
+        return new String(natives.input(prompt));
+    }
+}
+
+
 /*
  * Returns a new <List> instance, with initial elements *args
  */
@@ -482,7 +491,7 @@ fn round(num, precision=0) {
 /*
  * Returns the ftn(object) if the object <obj> is not null. Otherwise, return null.
  */
-fn non_null_else(obj, alter, ftn=null) {
+fn nonNullElse(obj, alter, ftn=null) {
     if obj === null {
         return null;
     } else if ftn === null {

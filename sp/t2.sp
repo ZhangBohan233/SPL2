@@ -8,3 +8,6 @@ class A {
     }
 }
 var c = new A(1);
+println(os.name);
+println(type(os.name));
+println(main());

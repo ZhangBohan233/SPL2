@@ -1,3 +1,20 @@
+********** SPL 2.0 Alpha 7 **********
+===== Build 0101 2019/10/29 =====
+
+* Library updates:
+    * sgl
+* Renamed independent function names in lowerCamelCase
+* Moved some native independent functions into module 'os'
+* Native invokes updates:
+    * os.list_files
+    * os.f_open
+    * os.exec
+    * os.exit
+    * natives.input
+* Rewritten function "main"
+* New library functions:
+    * input
+
 ********** SPL 2.0 Alpha 6 **********
 ===== Build 0100 2019/10/21 =====
 

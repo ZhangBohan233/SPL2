@@ -49,10 +49,10 @@ if main() {
     print("fib: ");
     println(t2 - t1);
 
-    const lst = algorithm.rand_list(500, -32768, 32767);
+    const lst = algorithm.randList(500, -32768, 32767);
 
     const t3 = system.time();
-    algorithm.merge_sort(lst);
+    algorithm.mergeSort(lst);
     const t4 = system.time();
 
     print("sort: ");

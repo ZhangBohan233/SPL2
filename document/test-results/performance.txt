@@ -3,8 +3,8 @@
 100 k while loop with ++: ~1060 ms
 20 fib: ~530 ms
 500 elements merge sort: ~1340 ms
-1000 objects creation: ~500 ms
-1000 single char string addition: ~580 ms
+1000 objects creation: ~480 ms
+1000 single char string concatenation: ~580 ms
 
 ===== Build 0097 =====
 
@@ -12,6 +12,14 @@
 20 fib: ~460 ms
 500 elements merge sort: ~1220 ms
 1000 objects creation: ~180 ms
+
+===== Build 0094 =====
+
+100 k while loop with ++: 1164
+20 fib: 663
+500 elements merge sort: 1957
+1000 objects creation: 250
+1000 single char string concatenation: 26
 
 ===== Build 0088 =====
 

@@ -10,7 +10,10 @@ Here are the common naming styles for different type of names:
 
 * **Class Names**: `CamelCase` is recommended.
 
-* **Function Names**: `lower_case_with_underscore` is recommended.
+* **Class Method Names**: `lower_case_with_underscore` is recommended.
+
+* **Function Names** `lowerCamelCase` is recommended, 
+`lower_case_with_underscore` is also acceptable
 
 * **Variable Names**: `lower_case_with_underscore` is recommended.
 

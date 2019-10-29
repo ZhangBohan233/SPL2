@@ -248,16 +248,26 @@ class Tokenizer:
             if isinstance(token, stl.IdToken) and token.symbol == "import":
                 next_token: stl.Token = self.tokens[i + 1]
                 namespace_token = None
+                name = None
                 if isinstance(next_token, stl.IdToken) and next_token.symbol == "namespace":
                     namespace_token = next_token
                     self.tokens.pop(i + 1)
                     path_token: stl.LiteralToken = self.tokens[i + 1]
                 elif isinstance(next_token, stl.LiteralToken):
                     path_token: stl.LiteralToken = self.tokens[i + 1]
+                    next2_token = self.tokens[i + 2]
+                    if isinstance(next2_token, stl.IdToken) and next2_token.symbol == "as":
+                        next3_token = self.tokens[i + 3]
+                        if isinstance(next3_token, stl.IdToken):
+                            name = next3_token.symbol
+                        else:
+                            raise stl.ParseException("Unexpected token as import name in file '{}', at line {}"
+                                                     .format(next_token.file, next_token.line))
                 else:
                     raise stl.ParseException("Unexpected token in file '{}', at line {}"
                                              .format(next_token.file, next_token.line))
-                name = path_token.text
+                if name is None:
+                    name = path_token.text
 
                 if name[-3:] == ".sp":  # user lib
                     if len(self.script_dir) == 0:

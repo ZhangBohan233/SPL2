@@ -1,4 +1,5 @@
 import "math"
 
 math.primes(100);
-math.is_prime(99);
+math.isPrime(99);
+println(math.eulerPhi2(100));

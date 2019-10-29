@@ -56,7 +56,7 @@ class Interpreter:
         system = lib.System(lib.Array(*parse_args(self.argv)), lib.CharArray(self.dir), self.encoding, self.in_out_err)
         natives = NativeInvokes()
         # native_graphics = gra.NativeGraphics()
-        os_ = lib.Os()
+        os_ = Os()
         self.env.define_const("system", system, LINE_FILE)
         self.env.define_const("os", os_, LINE_FILE)
         self.env.define_const("natives", natives, LINE_FILE)
@@ -118,16 +118,16 @@ def add_natives(env: Environment):
     env.define_const("float", NativeFunction(lib.to_float, "float"), LINE_FILE)
     env.define_const("chars", NativeFunction(to_chars, "chars"), LINE_FILE)
     env.define_const("repr", NativeFunction(to_repr, "repr"), LINE_FILE)
-    env.define_const("input", NativeFunction(input_, "input", True), LINE_FILE)
-    env.define_const("f_open", NativeFunction(f_open, "f_open", True), LINE_FILE)
+    # env.define_const("input", NativeFunction(input_, "input", True), LINE_FILE)
+    # env.define_const("f_open", NativeFunction(f_open, "f_open", True), LINE_FILE)
     env.define_const("eval", NativeFunction(eval_, "eval", True), LINE_FILE)
     env.define_const("dir", NativeFunction(dir_, "dir", True), LINE_FILE)
     env.define_const("get_env", NativeFunction(get_env, "get_env", True), LINE_FILE)
-    env.define_const("get_cwf", NativeFunction(get_cwf, "get_cwf"), LINE_FILE)
+    # env.define_const("get_cwf", NativeFunction(get_cwf, "get_cwf"), LINE_FILE)
     env.define_const("main", NativeFunction(is_main, "main", True), LINE_FILE)
-    env.define_const("exit", NativeFunction(lib.exit_, "exit"), LINE_FILE)
+    # env.define_const("exit", NativeFunction(lib.exit_, "exit"), LINE_FILE)
     env.define_const("help", NativeFunction(help_, "help", True), LINE_FILE)
-    env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
+    # env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
     env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
 
     env.define_const("Object", OBJECT, LINE_FILE)
@@ -138,7 +138,7 @@ def add_natives(env: Environment):
     env.define_const("File", lib.File, LINE_FILE)
     env.define_const("Thread", Thread, LINE_FILE)
     env.define_const("System", lib.System, LINE_FILE)
-    env.define_const("Os", lib.Os, LINE_FILE)
+    env.define_const("Os", Os, LINE_FILE)
     env.define_const("Natives", NativeInvokes, LINE_FILE)
     env.define_const("Function", Function, LINE_FILE)
     env.define_const("Graphic", gra.Graphic, LINE_FILE)
@@ -437,6 +437,125 @@ class NativeInvokes(lib.NativeType):
         """
         return env.attributes()
 
+    @staticmethod
+    def input(env: Environment, prompt=lib.CharArray("")):
+        """
+        Asks input from user.
+
+        This function will hold the program until the user inputs a new line character.
+
+        :param env: the calling environment
+        :param prompt: the prompt text to be shown to the user
+        :return the user input, as <String>
+        """
+        system = env.get_global_const("system")
+        print_(env, prompt, system.stdout)
+        flush: Function = system.stdout.env.get("flush", LINE_FILE)
+        call_function([], LINE_FILE, flush, env)
+
+        readline: Function = system.stdin.env.get("readline", LINE_FILE)
+        line = call_function([], LINE_FILE, readline, env)
+        return lib.CharArray(line)
+
+
+class Os(lib.NativeType):
+    """
+    A class consists of functions related to operating system
+
+    ----- Attributes -----
+        name: the name of the os
+        separator: the default path separator of the os
+    """
+    name = lib.CharArray(os.name)
+    separator = lib.CharArray(os.sep)
+
+    def __init__(self):
+        lib.NativeType.__init__(self)
+
+    @classmethod
+    def type_name__(cls):
+        return "Os"
+
+    @staticmethod
+    def list_files(path) -> lib.Array:
+        """
+        Returns a <List> consists of all files under the directory <path>.
+
+        :param path: the directory path
+        :return: a <List> consists of all files under the directory <path>
+        """
+        return lib.Array([lib.CharArray(x) for x in os.listdir(path)])
+
+    @staticmethod
+    def f_open(env: Environment, file, mode=None, encoding=None):
+        """
+        Opens a file and returns the File object.
+
+        :param env:
+        :param file: the file's path, in <String>
+        :param mode: the opening mode, 'r' as default
+        :param encoding: the file's encoding, 'utf-8' as default
+        :return: a reference to the File object
+        """
+        if mode is None:
+            mode_s = "r"
+        elif mode.class_name != "String":
+            raise lib.TypeException("Unexpected type for argument")
+        else:
+            mode_s = mode.env.get("lit", LINE_FILE)
+        if encoding is None:
+            enc_s = "utf-8"
+        elif encoding.class_name != "String":
+            raise lib.TypeException("Unexpected type for argument")
+        else:
+            enc_s = encoding.env.get("lit", LINE_FILE)
+        if file.class_name != "String":
+            raise lib.TypeException("Unexpected type for argument")
+
+        full_path = lib.concatenate_path(str(file), str(env.get_global_const("system").cwd))
+        try:
+            if "b" not in mode_s:
+                f = open(full_path, str(mode), encoding=str(enc_s))
+            else:
+                f = open(full_path, str(mode))
+            file = lib.File(f, str(mode))
+            return file
+        except IOError as e:
+            return -1
+
+    @staticmethod
+    def exec(env: Environment, *args):
+        path = str(env.get_global_const("system").cwd)
+        if len(args) == 0:
+            raise lib.ArgumentException("exec() takes at least one argument")
+        elif len(args) == 1:
+            if isinstance(args[0], lib.CharArray):
+                line = str(args[0])
+                return _exec_line(line, path)
+            elif isinstance(args[0], lib.Array):
+                line = " ".join(str(x) for x in args[0])
+                return _exec_line(line, path)
+            else:
+                raise lib.TypeException("Unknown argument type of exec()")
+        elif len(args) == 2:
+            if isinstance(args[0], lib.CharArray) and isinstance(args[1], lib.Array):
+                line = str(args[0]) + " " + " ".join(str(x) for x in args[1])
+                return _exec_line(line, path)
+            else:
+                raise lib.TypeException("Unknown argument type of exec()")
+        else:
+            line = " ".join(str(x) for x in args)
+            return _exec_line(line, path)
+
+    @staticmethod
+    def exit(code=0):
+        """
+        Exits the current process.
+
+        :param code: the exit code, 0 as default.
+        """
+        exit(code)
+
 
 class ClassInstance(lib.SplObject):
     def __init__(self, env: Environment, class_name: str, clazz):
@@ -592,26 +711,6 @@ def print_(env: Environment, s, stream: ClassInstance = None):
     call_function([lib.CharArray(s)], LINE_FILE, write, env)
 
 
-def input_(env: Environment, prompt=lib.CharArray("")):
-    """
-    Asks input from user.
-
-    This function will hold the program until the user inputs a new line character.
-
-    :param env: the calling environment
-    :param prompt: the prompt text to be shown to the user
-    :return the user input, as <String>
-    """
-    system = env.get_global_const("system")
-    print_(env, prompt, system.stdout)
-    flush: Function = system.stdout.env.get("flush", LINE_FILE)
-    call_function([], LINE_FILE, flush, env)
-
-    readline: Function = system.stdin.env.get("readline", LINE_FILE)
-    line = call_function([], LINE_FILE, readline, env)
-    return lib.CharArray(line)
-
-
 def typeof(obj) -> lib.CharArray:
     """
     Returns the type name of an object.
@@ -703,74 +802,14 @@ def get_cwf(obj: str):
     return lib.CharArray(obj)
 
 
-def is_main(env: Environment, obj):
+def is_main(env: Environment):
     """
     Returns <true> iff the interpreter is working on the main script.
 
     :return: <true> iff the interpreter is working on the main script
     """
-    return obj == env.get_global_const("system").argv[0].literal
-
-
-def f_open(env: Environment, file: ClassInstance, mode: ClassInstance = None, encoding: ClassInstance = None):
-    """
-    Opens a file and returns the File object.
-
-    :param env:
-    :param file: the file's path, in <String>
-    :param mode: the opening mode, 'r' as default
-    :param encoding: the file's encoding, 'utf-8' as default
-    :return: a reference to the File object
-    """
-    if mode is None:
-        mode_s = "r"
-    elif mode.class_name != "String":
-        raise lib.TypeException("Unexpected type for argument")
-    else:
-        mode_s = mode.env.get("lit", LINE_FILE)
-    if encoding is None:
-        enc_s = "utf-8"
-    elif encoding.class_name != "String":
-        raise lib.TypeException("Unexpected type for argument")
-    else:
-        enc_s = encoding.env.get("lit", LINE_FILE)
-    if file.class_name != "String":
-        raise lib.TypeException("Unexpected type for argument")
-
-    full_path = lib.concatenate_path(str(file), str(env.get_global_const("system").cwd))
-    try:
-        if "b" not in mode_s:
-            f = open(full_path, str(mode), encoding=str(enc_s))
-        else:
-            f = open(full_path, str(mode))
-        file = lib.File(f, str(mode))
-        return file
-    except IOError as e:
-        return -1
-
-
-def exec_(env: Environment, *args):
-    path = str(env.get_global_const("system").cwd)
-    if len(args) == 0:
-        raise lib.ArgumentException("exec() takes at least one argument")
-    elif len(args) == 1:
-        if isinstance(args[0], lib.CharArray):
-            line = str(args[0])
-            return _exec_line(line, path)
-        elif isinstance(args[0], lib.Array):
-            line = " ".join(str(x) for x in args[0])
-            return _exec_line(line, path)
-        else:
-            raise lib.TypeException("Unknown argument type of exec()")
-    elif len(args) == 2:
-        if isinstance(args[0], lib.CharArray) and isinstance(args[1], lib.Array):
-            line = str(args[0]) + " " + " ".join(str(x) for x in args[1])
-            return _exec_line(line, path)
-        else:
-            raise lib.TypeException("Unknown argument type of exec()")
-    else:
-        line = " ".join(str(x) for x in args)
-        return _exec_line(line, path)
+    return env.is_global()
+    # return obj == env.get_global_const("system").argv[0].literal
 
 
 def id_(obj: lib.SplObject):
@@ -825,6 +864,16 @@ def help_(env: Environment, obj=None):
         print_ln(env, "help() can only be used for classes, functions, native types, or native functions.")
 
 
+# def make_spl_string(env: Environment, content):
+#     fn_name: ast.NameNode = ast.NameNode(LINE_FILE, "string")
+#     call: ast.FuncCall = ast.FuncCall(LINE_FILE, fn_name)
+#     text = content if isinstance(content, lib.CharArray) else lib.CharArray(content)
+#     args = ast.BlockStmt(LINE_FILE)
+#     args.lines.append(text)
+#     call.args = args
+#     return evaluate(call, env)
+#
+
 # helper functions
 
 
@@ -872,10 +921,10 @@ def _exec_line(line: str, path: str):
     return result
 
 
-def _run_spl_script(env: Environment, path: lib.CharArray):
-    spl_path = script.get_spl_path() + os.sep + script.SPL_NAME
-    cmd = "python {} {}".format(spl_path, path)
-    return exec_(env, lib.CharArray(cmd))
+# def _run_spl_script(env: Environment, path: lib.CharArray):
+#     spl_path = script.get_spl_path() + os.sep + script.SPL_NAME
+#     cmd = "python {} {}".format(spl_path, path)
+#     return exec_(env, lib.CharArray(cmd))
 
 
 # Interpreter
@@ -1260,7 +1309,7 @@ def eval_func_call(node: ast.FuncCall, env: Environment):
         return func
     elif isinstance(func, NativeFunction):
         args, kwargs = parse_function_args(node.args.lines, env)
-        if func.name == "getcwf" or func.name == "main":
+        if func.name == "getcwf":
             args.append(node.file)
         result = func.call(env, args, kwargs)
         if isinstance(result, ast.BlockStmt):
@@ -2139,13 +2188,13 @@ def evaluate(node: ast.Node, env: Environment):
 
 # Processes before run
 
-
-def string_run(self: lib.CharArray, env):
-    result = _run_spl_script(env, self)
-    return result
-
-
-lib.CharArray.__run__ = string_run
+#
+# def string_run(self: lib.CharArray, env):
+#     result = _run_spl_script(env, self)
+#     return result
+#
+#
+# lib.CharArray.__run__ = string_run
 
 OBJECT_DOC = """
 The superclass of all spl object.

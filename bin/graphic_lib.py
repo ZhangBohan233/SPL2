@@ -4,15 +4,18 @@ from tkinter import filedialog
 import tkinter
 import tkinter.ttk
 
+GRA_LINE = 0, "graphic_lib"
+
 
 class Graphic(lib.NativeType):
-    def __init__(self, name: lib.CharArray, parent=None):
+    def __init__(self, name, parent=None):
         lib.NativeType.__init__(self)
 
-        if len(name.literal) > 4 and name.literal[:4] == "ttk.":
-            true_func = getattr(tkinter.ttk, name.literal[4:])
+        name_cont: str = name.env.get("lit", GRA_LINE).literal
+        if len(name_cont) > 4 and name_cont[:4] == "ttk.":
+            true_func = getattr(tkinter.ttk, name_cont[4:])
         else:
-            true_func = getattr(tkinter, name.literal)
+            true_func = getattr(tkinter, name_cont)
         if parent is None:
             self.tk = true_func()
         else:
@@ -22,22 +25,22 @@ class Graphic(lib.NativeType):
     def type_name__(cls) -> str:
         return "Graphic"
 
-    def set_bg(self, color: lib.CharArray):
-        self.tk.configure(bg=color.literal)
+    def set_bg(self, color):
+        self.tk.configure(bg=color.env.get("lit", GRA_LINE).literal)
 
-    def configure(self, env, key: lib.CharArray, value):
+    def configure(self, env, key, value):
         v = proceed_function(value, env)
-        cfg = {key.literal: v}
+        cfg = {key.env.get("lit", GRA_LINE).literal: v}
         self.tk.configure(cfg)
 
-    def get(self, key: lib.CharArray):
-        return self.tk[key.literal]
+    def get(self, key):
+        return self.tk[key.env.get("lit", GRA_LINE).literal]
 
-    def set_attr(self, attr: lib.CharArray, value):
-        setattr(self.tk, attr.literal, value)
+    def set_attr(self, attr, value):
+        setattr(self.tk, attr.env.get("lit", GRA_LINE).literal, value)
 
-    def callback(self, env, cmd: lib.CharArray, ftn):
-        cfg = {cmd.literal: proceed_function(ftn, env)}
+    def callback(self, env, cmd, ftn):
+        cfg = {cmd.env.get("lit", GRA_LINE).literal: proceed_function(ftn, env)}
         self.tk.configure(cfg)
 
     @staticmethod
@@ -46,8 +49,8 @@ class Graphic(lib.NativeType):
         if res is not None:
             return lib.CharArray(res)
 
-    def call(self, env, func_name: lib.CharArray, *args, **kwargs):
-        func = getattr(self.tk, func_name.literal)
+    def call(self, env, func_name, *args, **kwargs):
+        func = getattr(self.tk, func_name.env.get("lit", GRA_LINE).literal)
         args2 = []
         kwargs2 = {}
         for a in args:
@@ -65,6 +68,8 @@ def proceed_function(ftn, env):
     if type(ftn).__name__ == "Function":
         return lambda: inter.call_function([], (0, "callback"), ftn, env)
     elif isinstance(ftn, lib.CharArray):
+        return str(ftn)
+    elif isinstance(ftn, inter.ClassInstance):
         return str(ftn)
     elif isinstance(ftn, lib.Array):
         return ftn.list

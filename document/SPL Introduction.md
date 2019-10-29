@@ -32,15 +32,15 @@ comment.
 
 #### Variable System:
 
-SPL is a dynamic language. There is no need for declaring the typeof a variable,
-but it is necessary to declare the scope level of it.
+SPL is a dynamic language. There is no need for declaring the typeof a 
+variable, but it is necessary to declare the scope level of it.
 For example the expression:
 
 `var a = 1;`
 
 declares a var-level variable `a` and sets it to integer 1.
 
-There are 3 types of variables in SPL, which are:
+There are 2 types of variables in SPL, which are:
 
 * `var` declares a variable that is accessible in any scope under the scope
 where the variable is declared.
@@ -51,16 +51,21 @@ again.
 
 ### SPL Built-in types:
 
-SPL has several built-in types:
+SPL has several native types:
 
 * `int` Integer
 * `float` Floating point number
 * `boolean` Boolean value, `true` or `false`
 * `void` The type name of the `null` pointer
-* `string` String literal
-* `list` List of any objects
-* `pair` Key-value pair
-* `set` Set of different objects
+* `Pair` Key-value pair
+* `Set` Set of different objects
+* `Array` array of any element, size is fixed
+* `CharArray` array of chars, immutable
+
+And built-in types:
+
+* `String` String literal
+* `List` List of any objects
 
 ### Functions:
 

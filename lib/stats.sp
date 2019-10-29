@@ -98,7 +98,7 @@ fn mean(lst) {
     return float(functions.sum(lst)) / lst.size();
 }
 
-fn read_csv(file_name) {
+fn readCsv(file_name) {
     tis := new io.TextInputStream(file_name);
     lst := [];
     var line;

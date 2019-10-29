@@ -1,6 +1,6 @@
 import "stats"
 
-ds := stats.read_csv("reale.csv");
+ds := stats.readCsv("reale.csv");
 sub := ds.subset(1,1);
 sale_p := ds.get_column_by_name("sale price in $100000");
 list_p := ds.get_column_by_name("list price in $100000");

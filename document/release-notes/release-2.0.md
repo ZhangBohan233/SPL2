@@ -8,7 +8,7 @@ Release date:
 * Variable declaration and assignment via operator ":="
 * Parenthesis around condition statements (`if`,`for`,`while`) and catch 
 statement is no longer needed
-* Braces around then block is required
+* Braces around `if-else`, `while` body is required
 * Keywords `function`, `def`, operators `and`, `or`, `not`, `is` are no
 longer supported
 
@@ -25,11 +25,32 @@ var obj = new Object <- {
 }
 ```
 
+#### Spl Class String
+* Implemented `String` in `lang.sp`, with `CharArray` in python
+* Implemented `input` function in `lang.sp`, moved python based input
+function into `natives`
+
+#### Object Oriented Native Functions:
+* Moved `f_open`, `exec`, `exit` into native class `os`
+
+#### New Built-in Library:
+* `stats.sp` Provides basic statistical functions
+
 #### Library Function Updates:
+* New library functions in `lang.sp`: `NonNullElse`, `round`
 * All functions with arguments set `iter, function` in `functions.sp` 
 now take the iterable as the first argument.
+* More functions in `math.sp`
+* Renamed all independent library function names in `lowerCamelCase`
 
 ## Optimizations:
 
 #### Environment optimization:
 * Removed the heap-variable in global scope
+
+#### Operators:
+* Adjusted operator precedences
+
+## Key Feature Updates:
+
+#### Even Slower

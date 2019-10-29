@@ -110,7 +110,7 @@ class Environment:
         return self.scope_type == MODULE_SCOPE
 
     def is_global(self):
-        raise NotImplementedError
+        return False
 
     def is_class(self):
         raise NotImplementedError
@@ -354,9 +354,6 @@ class MainAbstractEnvironment(Environment):
 
         self.namespaces = set()
 
-    def is_global(self):
-        raise NotImplementedError
-
     def is_class(self):
         raise NotImplementedError
 
@@ -394,9 +391,6 @@ class SubAbstractEnvironment(Environment):
 
     def is_sub(self):
         return True
-
-    def is_global(self):
-        return False
 
     def is_class(self):
         return False
@@ -446,9 +440,6 @@ class ModuleEnvironment(MainAbstractEnvironment):
     def __init__(self, outer):
         MainAbstractEnvironment.__init__(self, MODULE_SCOPE, outer)
 
-    def is_global(self):
-        return False
-
     def is_class(self):
         return False
 
@@ -460,9 +451,6 @@ class ClassEnvironment(MainAbstractEnvironment):
     def is_class(self):
         return True
 
-    def is_global(self):
-        return False
-
 
 class FunctionEnvironment(MainAbstractEnvironment):
     def __init__(self, outer):
@@ -472,9 +460,6 @@ class FunctionEnvironment(MainAbstractEnvironment):
         self.exit_value = None
 
     def is_class(self):
-        return False
-
-    def is_global(self):
         return False
 
     def terminate(self, exit_value):

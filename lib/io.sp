@@ -6,7 +6,7 @@ class TextInputStream extends InputStream {
     var fp = null;
 
     fn TextInputStream(file_name) {
-        fp = f_open(file_name, "r");
+        fp = os.f_open(file_name, "r");
         if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
@@ -14,11 +14,11 @@ class TextInputStream extends InputStream {
 
     @Override
     fn read() {
-        return non_null_else(fp.read(), null, string);
+        return nonNullElse(fp.read(), null, string);
     }
 
     fn readline() {
-        return non_null_else(fp.readline(), null, string);
+        return nonNullElse(fp.readline(), null, string);
     }
 
     @Override
@@ -36,7 +36,7 @@ class FileInputStream extends InputStream {
     var fp = null;
 
     fn FileInputStream(file_name) {
-        fp = f_open(file_name, "rb");
+        fp = os.f_open(file_name, "rb");
         if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
@@ -66,7 +66,7 @@ class TextOutputStream extends OutputStream {
     var fp = null;
 
     fn TextOutputStream(file_name) {
-        fp = f_open(file_name, "w");
+        fp = os.f_open(file_name, "w");
         if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }
@@ -97,7 +97,7 @@ class FileOutputStream extends OutputStream {
     var fp = null;
 
     fn FileOutputStream(file_name) {
-        fp = f_open(file_name, "wb");
+        fp = os.f_open(file_name, "wb");
         if fp == -1 {
             throw new FileNotFoundException(file_name + " not found");
         }

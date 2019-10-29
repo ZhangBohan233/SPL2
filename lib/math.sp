@@ -161,7 +161,7 @@ fn fact(n) {
 /*
  * Returns <true> if <p> is a prime.
  */
-fn is_prime(p) {
+fn isPrime(p) {
     var lim = ceil(sqrt(p));
     if p == 2 {
         return true;
@@ -197,7 +197,7 @@ fn primes(limit) {
 }
 
 
-fn euler_phi(n) {
+fn eulerPhi(n) {
     var count = 0;
     for var i = 0; i < n; i++ {
         if gcd(n, i) == 1 {
@@ -208,8 +208,18 @@ fn euler_phi(n) {
 }
 
 
-fn euler_phi_fp(n) {
+fn eulerPhiFp(n) {
     return functions.count(range(1, n, 1), x -> gcd(n, x) == 1);
+}
+
+
+fn eulerPhi2(n) {
+    fac := factorization(n);
+    sum := 1;
+    for var p; fac {
+        sum *= 1 - 1.0 / p;
+    }
+    return int(n * sum);
 }
 
 

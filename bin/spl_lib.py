@@ -462,35 +462,6 @@ class System(NativeType):
         return "System"
 
 
-class Os(NativeType):
-    """
-    A class consists of functions related to operating system
-
-    ----- Attributes -----
-        name: the name of the os
-        separator: the default path separator of the os
-    """
-    name = CharArray(os.name)
-    separator = CharArray(os.sep)
-
-    def __init__(self):
-        NativeType.__init__(self)
-
-    @classmethod
-    def type_name__(cls):
-        return "Os"
-
-    @staticmethod
-    def list_files(path) -> Array:
-        """
-        Returns a <List> consists of all files under the directory <path>.
-
-        :param path: the directory path
-        :return: a <List> consists of all files under the directory <path>
-        """
-        return Array(os.listdir(path))
-
-
 class File(NativeType):
     """
     An opened file object.
@@ -648,15 +619,6 @@ class AttributeException(SplException):
 class StringFormatException(SplException):
     def __init__(self, msg=""):
         SplException.__init__(self, msg)
-
-
-def exit_(code=0):
-    """
-    Exits the current process.
-
-    :param code: the exit code, 0 as default.
-    """
-    exit(code)
 
 
 def make_array(*initial_elements, **kwargs):
