@@ -135,12 +135,6 @@ class Environment:
     def assign_namespace(self, key: str, value):
         raise NotImplementedError
 
-    def add_global_const(self, key, value):
-        if self.is_global():
-            self.constants[key] = value
-        else:
-            self.outer.add_global_const(key, value)
-
     def get_global_const(self, key):
         if self.is_global():
             return self.constants[key]
@@ -409,7 +403,7 @@ class GlobalEnvironment(MainAbstractEnvironment):
     def __init__(self):
         MainAbstractEnvironment.__init__(self, GLOBAL_SCOPE, None)
 
-        self.modules = {}  # module path : Module objects
+        # self.modules = {}  # module path : Module objects
 
     def is_class(self):
         return False
@@ -417,23 +411,23 @@ class GlobalEnvironment(MainAbstractEnvironment):
     def is_global(self):
         return True
 
-    def find_module(self, file_path):
-        """
-        Returns a reference to the module.
-
-        If the module is already imported, returns the reference to the previous imported one.
-        Otherwise, adds the module and returns the reference to the the newly added module.
-
-        :param file_path:
-        :return: a reference to the module
-        """
-        if file_path in self.modules:
-            return self.modules[file_path]
-        else:
-            return None
-
-    def add_module(self, file_path, module):
-        self.modules[file_path] = module
+    # def find_module(self, file_path):
+    #     """
+    #     Returns a reference to the module.
+    #
+    #     If the module is already imported, returns the reference to the previous imported one.
+    #     Otherwise, adds the module and returns the reference to the the newly added module.
+    #
+    #     :param file_path:
+    #     :return: a reference to the module
+    #     """
+    #     if file_path in self.modules:
+    #         return self.modules[file_path]
+    #     else:
+    #         return None
+    #
+    # def add_module(self, file_path, module):
+    #     self.modules[file_path] = module
 
 
 class ModuleEnvironment(MainAbstractEnvironment):

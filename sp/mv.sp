@@ -1,4 +1,4 @@
 import "util"
 
 a := "xxx";
-util.memory_view(get_env());
+util.memoryView(get_env());

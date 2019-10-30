@@ -227,7 +227,6 @@ class Class(lib.SplObject):
         self.outer_env = outer_env
         self.doc = lib.CharArray(doc)
         self.abstract = abstract
-        # self.persists = ClassEnvironment(outer_env)
         self.line_num = line
         self.file = file
 
@@ -1470,10 +1469,11 @@ def eval_dot(node: ast.Dot, env: Environment):
         if isinstance(instance, lib.NativeType):
             return native_types_attr_invoke(instance, obj)
         elif isinstance(instance, ClassInstance) or isinstance(instance, Module):
-            attr = instance.env.get(obj.name, lf)
-            return attr
+            # name: str = obj.name
+            # if name[0] == "_" and name[-1] != "_":
+            #     print(11)
+            return evaluate(obj, instance.env)
         else:
-            # print(instance)
             raise lib.TypeException("Type '{}' does not have attribute '{}', in '{}', at line {}"
                                     .format(typeof(instance), obj.name, node.file, node.line_num))
     elif t == ast.FUNCTION_CALL:
@@ -1558,15 +1558,15 @@ def class_arithmetic(left: Class, right, symbol, env: Environment, right_node):
 
 
 def instance_arithmetic(left: ClassInstance, right, symbol, env: Environment):
-    if symbol == "===" or symbol == "is":
+    if symbol == "===":
         return isinstance(right, ClassInstance) and left.id == right.id
     elif symbol == "!==":
         return not isinstance(right, ClassInstance) or left.id != right.id
     elif symbol == "instanceof":
         if isinstance(right, Class):
-            return is_subclass_of(env.get_class(left.class_name), right)
+            return is_subclass_of(left.clazz, right)
         elif isinstance(right, Function):
-            return is_subclass_of(env.get_class(left.class_name), right.clazz)
+            return is_subclass_of(left.clazz, right.clazz)
         else:
             return False
     else:
@@ -2103,25 +2103,13 @@ def eval_indexing_node(node: ast.IndexingNode, env: Environment):
 
 def eval_import_node(node: ast.ImportNode, env: Environment):
     block = node.block
-    path = node.path
-    global_env: GlobalEnvironment = env.get_global()
-    prev_module = global_env.find_module(path)
 
-    lst = node.import_name.split(".")
-    outer = env
-    module = None
-    for i in range(len(lst)):
-        module_env = ModuleEnvironment(outer)
-        module = Module(module_env)
-        if i == len(lst) - 1:
-            if prev_module is None:
-                evaluate(block, module_env)
-                global_env.add_module(path, module)
-            else:
-                module = prev_module
+    module_env = ModuleEnvironment(env)
+    module = Module(module_env)
+    evaluate(block, module_env)
 
-        outer.define_var(lst[i], module, LINE_FILE)
-        outer = module_env
+    env.define_const(node.import_name, module, (node.line_num, node.file))
+
     return module
 
 
@@ -2136,10 +2124,14 @@ def eval_ann_node(node: ast.AnnotationNode, env: Environment):
     return evaluate(assign_node, env)
 
 
+def eval_name_node(node: ast.NameNode, env: Environment):
+    return env.get(node.name, (node.line_num, node.file))
+
+
 # Operation table of every non-abstract node types
 NODE_TABLE = {
     ast.LITERAL_NODE: lambda n, env: lib.CharArray(n.literal),
-    ast.NAME_NODE: lambda n, env: env.get(n.name, (n.line_num, n.file)),
+    ast.NAME_NODE: eval_name_node,
     ast.BREAK_STMT: lambda n, env: env.break_loop(),
     ast.CONTINUE_STMT: lambda n, env: env.pause_loop(),
     ast.ASSIGNMENT_NODE: eval_assignment_node,

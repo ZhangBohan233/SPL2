@@ -248,34 +248,27 @@ class Tokenizer:
             if isinstance(token, stl.IdToken) and token.symbol == "import":
                 next_token: stl.Token = self.tokens[i + 1]
                 namespace_token = None
-                name = None
                 if isinstance(next_token, stl.IdToken) and next_token.symbol == "namespace":
                     namespace_token = next_token
                     self.tokens.pop(i + 1)
                     path_token: stl.LiteralToken = self.tokens[i + 1]
                 elif isinstance(next_token, stl.LiteralToken):
                     path_token: stl.LiteralToken = self.tokens[i + 1]
-                    next2_token = self.tokens[i + 2]
-                    if isinstance(next2_token, stl.IdToken) and next2_token.symbol == "as":
-                        next3_token = self.tokens[i + 3]
-                        if isinstance(next3_token, stl.IdToken):
-                            name = next3_token.symbol
-                        else:
-                            raise stl.ParseException("Unexpected token as import name in file '{}', at line {}"
-                                                     .format(next_token.file, next_token.line))
                 else:
                     raise stl.ParseException("Unexpected token in file '{}', at line {}"
                                              .format(next_token.file, next_token.line))
-                if name is None:
-                    name = path_token.text
+                name = path_token.text
 
                 if name[-3:] == ".sp":  # user lib
                     if len(self.script_dir) == 0:
-                        file_name = name[:-3].replace(".", "/") + ".sp"
+                        file_name = name[:-3] + ".sp"
                     else:
-                        file_name = self.script_dir + "{}{}".format(os.sep, name[:-3]).replace(".", "/") + ".sp"
+                        file_name = self.script_dir + "{}{}".format("/", name[:-3]) + ".sp"
                         # file_name = "{}{}{}".format(self.script_dir, os.sep, name[:-3]).replace(".", "/") + ".sp"
-                    import_name = name[:-3]
+                    if "/" in name:
+                        import_name = name[name.rfind("/") + 1:-3]
+                    else:
+                        import_name = name[:-3]
                 else:  # system lib
                     file_name = "{}{}lib{}{}.sp".format(self.spl_path, os.sep, os.sep, name)
                     import_name = name

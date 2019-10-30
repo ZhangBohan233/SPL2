@@ -1,3 +1,13 @@
+********** SPL 2.0 Alpha 8 **********
+===== Build 0102 2019/10/30 =====
+
+* Rework on import system:
+    * Syntax change of custom library importing: using path instead of package names
+        * import "xx/yy/zz.sp"
+    * The default import name is the file's name
+* Bug fixes:
+    * Operator 'instanceof' causes error if the target class is not reachable
+
 ********** SPL 2.0 Alpha 7 **********
 ===== Build 0101 2019/10/29 =====
 
