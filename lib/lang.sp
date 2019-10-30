@@ -450,6 +450,9 @@ class List extends Iterable {
 }
 
 
+/*
+ * Shows a prompt message to user and returns the single line input from user.
+ */
 fn input(prompt=null) {
     if prompt === null {
         return new String(natives.input());
@@ -457,7 +460,6 @@ fn input(prompt=null) {
         return new String(natives.input(prompt));
     }
 }
-
 
 /*
  * Returns a new <List> instance, with initial elements *args

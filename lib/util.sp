@@ -92,7 +92,7 @@ class StringBuilder {
     }
 }
 
-fn memory_view(env) {
+fn memoryView(env) {
     var mv = new MemoryViewer(env);
     mv.show();
 }

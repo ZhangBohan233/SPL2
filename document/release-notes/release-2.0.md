@@ -30,6 +30,11 @@ var obj = new Object <- {
 * Implemented `input` function in `lang.sp`, moved python based input
 function into `natives`
 
+#### Rework on Import System:
+*  Syntax change of custom library importing: using path instead of 
+package names. For example, `import "xx/yy/zz.sp"`
+* The default import name is the file's name
+
 #### Object Oriented Native Functions:
 * Moved `f_open`, `exec`, `exit` into native class `os`
 
