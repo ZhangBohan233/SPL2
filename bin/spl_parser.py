@@ -27,6 +27,7 @@ class Parser:
         is_extending = False
         is_conditional = False
         var_level = ast.ASSIGN
+        privilege = ast.PUBLIC
         brace_count = 0
         class_braces = []
         import_braces = []
@@ -63,6 +64,8 @@ class Parser:
                         var_level = ast.CONST
                     elif sym == "var":
                         var_level = ast.VAR
+                    elif sym == "private":
+                        privilege = ast.PRIVATE
                     elif sym == "@":
                         i += 1
                         next_token: stl.IdToken = self.tokens[i]
@@ -143,11 +146,11 @@ class Parser:
                             parser.build_getitem()
                     elif sym == "=":
                         parser.build_expr()
-                        parser.add_assignment(line, var_level)
+                        parser.add_assignment(line, var_level, privilege)
                         var_level = ast.ASSIGN
                     elif sym == ":=":
                         parser.build_expr()
-                        parser.add_assignment(line, ast.VAR)
+                        parser.add_assignment(line, ast.VAR, privilege)
                     elif sym == ",":
                         if var_level == ast.ASSIGN:  # the normal level
                             parser.build_line()
@@ -166,7 +169,8 @@ class Parser:
                             push_back = 0
                         elif f_name.isidentifier():
                             parser.add_name(line, f_name)
-                            parser.add_assignment(line, ast.FUNC_DEFINE)
+                            parser.add_assignment(line, ast.FUNC_DEFINE, privilege)
+                            privilege = ast.PUBLIC
                         else:
                             raise stl.ParseException("Illegal function name '{}', in file '{}', at line {}"
                                                      .format(f_name, line[1], line[0]))
@@ -198,7 +202,7 @@ class Parser:
                             op_token = self.tokens[i]
                         op_name = "__" + group[op_token.symbol] + "__"
                         parser.add_name(line, op_name)
-                        parser.add_assignment(line, ast.FUNC_DEFINE)
+                        parser.add_assignment(line, ast.FUNC_DEFINE, privilege)
                         parser.add_function(line, False, func_doc)
                         param_nest_list.append(par_count)
                         par_count += 1
@@ -290,10 +294,11 @@ class Parser:
                             active.stack.clear()
                             for node in und_vars:
                                 active.stack.append(node)
-                                parser.add_assignment(line, var_level)
+                                parser.add_assignment(line, var_level, privilege)
                                 parser.add_undefined(line)
                                 parser.build_line()
                             var_level = ast.ASSIGN
+                            privilege = ast.PUBLIC
                         parser.build_line()
                     else:
                         parser.add_name(line, sym)

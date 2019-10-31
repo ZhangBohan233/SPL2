@@ -46,6 +46,10 @@ CONST = 1
 VAR = 2
 FUNC_DEFINE = 3
 
+# Variable privileges
+PUBLIC = 0
+PRIVATE = 1
+
 
 class SpaceCounter:
     def __init__(self):
@@ -246,13 +250,15 @@ class NameNode(LeafNode):
 
 
 class AssignmentNode(BinaryExpr):
-    level = ASSIGN
+    level: int
+    privilege: int
 
-    def __init__(self, line, level):
+    def __init__(self, line, level, privilege):
         BinaryExpr.__init__(self, line, "=")
 
         self.node_type = ASSIGNMENT_NODE
         self.level = level
+        self.privilege = privilege
 
 
 class InDecrementOperator(Expr):
@@ -655,12 +661,12 @@ class AbstractSyntaxTree:
             node = UnaryOperator(line, op)
             self.stack.append(node)
 
-    def add_assignment(self, line, var_level: int):
+    def add_assignment(self, line, var_level: int, privilege: int):
         if self.inner:
-            self.inner.add_assignment(line, var_level)
+            self.inner.add_assignment(line, var_level, privilege)
         else:
             self.in_expr = True
-            ass_node = AssignmentNode(line, var_level)
+            ass_node = AssignmentNode(line, var_level, privilege)
             self.stack.append(ass_node)
 
     def add_ternary(self, line, op1):

@@ -73,7 +73,7 @@ class Environment:
 
     def __init__(self, scope_type, outer):
         self.scope_type = scope_type
-        self.variables: dict = {}  # Stack variables
+        self.variables: dict = {}  # Variables
         self.constants: dict = {}  # Constants
 
         self.outer: Environment = outer
@@ -98,8 +98,8 @@ class Environment:
         """
         Re-initialize this scope.
 
-        This method will only be called in a scope under level 'LOOP_SCOPE', although this access will not
-        be checked.
+        This method will only be called in a scope under level 'LOOP_SCOPE' or 'BLOCK_SCOPE',
+        although this access will not be checked.
 
         :return: None
         """
@@ -207,19 +207,37 @@ class Environment:
         else:
             self.constants[key] = value
 
-    def assign(self, key, value, lf):
+    def define_private_function(self, key, value, lf, annotations: lib.Set):
+        raise lib.VariableScopeException(
+            "Private function '{}' can only be defined directly under class, in file '{}', at line {}"
+            .format(key, lf[1], lf[0]))
+
+    def define_private_var(self, key, value, lf):
+        raise lib.VariableScopeException(
+            "Private variable '{}' can only be defined directly under class, in file '{}', at line {}"
+            .format(key, lf[1], lf[0]))
+
+    def define_private_const(self, key, value, lf):
+        raise lib.VariableScopeException(
+            "Private constant '{}' can only be defined directly under class, in file '{}', at line {}"
+            .format(key, lf[1], lf[0]))
+
+    def assign(self, key, value, lf, first_call=True) -> bool:
         if key in self.variables:
             self.variables[key] = value
+            return True
         else:
-            out = self.outer
-            while out:
-                if key in out.variables:
-                    out.variables[key] = value
-                    return
-                out = out.outer
-            if not self.assign_const(key, value, lf) and not self.assign_namespace(key, value):
-                raise lib.NameException("Name '{}' is not defined, in '{}', at line {}"
-                                        .format(key, lf[1], lf[0]))
+            if self.outer:
+                b = self.outer.assign(key, value, lf, False)
+                if b:
+                    return True
+            if first_call:
+                if self.assign_const(key, value, lf) or self.assign_namespace(key, value):
+                    return True
+                else:
+                    raise lib.NameException("Name '{}' is not defined, in '{}', at line {}"
+                                            .format(key, lf[1], lf[0]))
+            return False
 
     def assign_const(self, key, value, lf) -> bool:
         if key in self.constants:
@@ -242,22 +260,22 @@ class Environment:
                 out = out.outer
         return False
 
-    def _local_inner_get(self, key: str):
-        if key in self.constants:
-            return self.constants[key]
-        if key in self.variables:
-            return self.variables[key]
-
-        out = self
-        while out.outer and out.is_sub():
-            out = out.outer
-
-            if key in out.constants:
-                return out.constants[key]
-            if key in out.variables:
-                return out.variables[key]
-
-        return NULLPTR
+    # def _local_inner_get(self, key: str):
+    #     if key in self.constants:
+    #         return self.constants[key]
+    #     if key in self.variables:
+    #         return self.variables[key]
+    #
+    #     out = self
+    #     while out.outer and out.is_sub():
+    #         out = out.outer
+    #
+    #         if key in out.constants:
+    #             return out.constants[key]
+    #         if key in out.variables:
+    #             return out.variables[key]
+    #
+    #     return NULLPTR
 
     def _local_contains(self, key: str) -> bool:
         """
@@ -269,32 +287,56 @@ class Environment:
         v = self._local_inner_get(key)
         return v is not NULLPTR
 
-    def _inner_get(self, key: str):
-        """
-        Internally gets a value stored in this scope, 'NULLPTR' if not found.
-
-        :param key:
-        :return:
-        """
+    def _inner_get(self, key: str, first_call: bool):
         if key in self.constants:
             return self.constants[key]
         if key in self.variables:
             return self.variables[key]
+        v = NULLPTR
+        if self.outer:
+            v = self.outer._inner_get(key, False)
+        if first_call and v is NULLPTR:
+            v = self.search_namespace(key)
+        return v
 
-        out = self.outer
-        while out:
-            if key in out.constants:
-                return out.constants[key]
-            if key in out.variables:
-                return out.variables[key]
-
-            out = out.outer
-
-        v = self.search_namespace(key)
-        if v is not NULLPTR:
-            return v
-
+    def _local_inner_get(self, key: str):
+        if key in self.constants:
+            return self.constants[key]
+        if key in self.variables:
+            return self.variables[key]
+        if self.outer and self.outer.is_sub():
+            return self.outer._local_inner_get(key)
         return NULLPTR
+
+    # def _inner_get(self, key: str, first_call: bool):
+    #     raise NotImplementedError
+
+    # def _inner_get(self, key: str):
+    #     """
+    #     Internally gets a value stored in this scope, 'NULLPTR' if not found.
+    #
+    #     :param key:
+    #     :return:
+    #     """
+    #     if key in self.constants:
+    #         return self.constants[key]
+    #     if key in self.variables:
+    #         return self.variables[key]
+    #
+    #     out = self.outer
+    #     while out:
+    #         if key in out.constants:
+    #             return out.constants[key]
+    #         if key in out.variables:
+    #             return out.variables[key]
+    #
+    #         out = out.outer
+    #
+    #     v = self.search_namespace(key)
+    #     if v is not NULLPTR:
+    #         return v
+    #
+    #     return NULLPTR
 
     def get(self, key: str, line_file: tuple):
         """
@@ -306,7 +348,7 @@ class Environment:
         :param line_file:
         :return: the value corresponding to the key. Instance will be returned if the value is a pointer.
         """
-        v = self._inner_get(key)
+        v = self._inner_get(key, True)
         # print(key + str(v))
         if v is NULLPTR:
             raise lib.NameException("Name '{}' is not defined, in file '{}', at line {}"
@@ -314,7 +356,7 @@ class Environment:
         return v
 
     def get_class(self, class_name):
-        v = self._inner_get(class_name)
+        v = self._inner_get(class_name, True)
         if v is NULLPTR:
             raise lib.NameException("Class or module '{}' is not defined".format(class_name))
         elif type(v).__name__ == "Function":
@@ -328,7 +370,7 @@ class Environment:
             return self.outer.get_global()
 
     def contains_key(self, key: str):
-        v = self._inner_get(key)
+        v = self._inner_get(key, True)
         return v is not NULLPTR
 
     def attributes(self):
@@ -442,8 +484,86 @@ class ClassEnvironment(MainAbstractEnvironment):
     def __init__(self, outer):
         MainAbstractEnvironment.__init__(self, CLASS_SCOPE, outer)
 
+        self.private_variables = {}
+        self.private_constants = {}
+
     def is_class(self):
         return True
+
+    def _inner_get(self, key: str, first_call: bool):
+        if key in self.private_constants:
+            return self.private_constants[key]
+        if key in self.private_variables:
+            return self.private_variables[key]
+        if key in self.constants:
+            return self.constants[key]
+        if key in self.variables:
+            return self.variables[key]
+        v = NULLPTR
+        if self.outer:
+            v = self.outer._inner_get(key, False)
+        if first_call and v is NULLPTR:
+            v = self.search_namespace(key)
+        return v
+
+    def _local_inner_get(self, key: str):
+        if key in self.private_constants:
+            return self.private_constants[key]
+        if key in self.private_variables:
+            return self.private_variables[key]
+        if key in self.constants:
+            return self.constants[key]
+        if key in self.variables:
+            return self.variables[key]
+        if self.outer and self.outer.is_sub():
+            return self.outer._local_inner_get(key)
+        return NULLPTR
+
+    def assign(self, key, value, lf, first_call=True) -> bool:
+        if key in self.private_variables:
+            self.private_variables[key] = value
+            return True
+        return super().assign(key, value, lf, False)
+
+    def assign_const(self, key, value, lf) -> bool:
+        if key in self.private_constants:
+            if self.private_constants[key] is UNDEFINED:
+                self.private_constants[key] = value
+                return True
+            else:
+                raise lib.NameException("Assignment to constant '{}' is not allowed, in '{}', at line {}"
+                                        .format(key, lf[1], lf[0]))
+        else:
+            return super().assign_const(key, value, lf)
+
+    def define_private_function(self, key, value, lf, annotations: lib.Set):
+        if not annotations.contains(OVERRIDE) and \
+                not annotations.contains(SUPPRESS) and \
+                key[0].islower() and self._local_contains(key):
+            lib.compile_time_warning("Warning: re-declaring method '{}' in '{}', at line {}".format(key, lf[1], lf[0]))
+        self.private_variables[key] = value
+
+    def define_private_var(self, key, value, lf):
+        if self._local_contains(key):
+            raise lib.NameException("Name '{}' is already defined in this scope, in '{}', at line {}"
+                                    .format(key, lf[1], lf[0]))
+        else:
+            self.private_variables[key] = value
+
+    def define_private_const(self, key, value, lf):
+        if self._local_contains(key):
+            raise lib.NameException("Name '{}' is already defined in this scope, in {}, at line {}"
+                                    .format(key, lf[1], lf[0]))
+        else:
+            self.private_constants[key] = value
+
+    def attributes(self):
+        """
+        Returns a union of all local variables in this scope.
+
+        :return: a union of all local variables in this scope
+        """
+        return {**self.constants, **self.variables, **self.private_constants, **self.private_variables}
 
 
 class FunctionEnvironment(MainAbstractEnvironment):

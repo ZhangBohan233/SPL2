@@ -1112,7 +1112,7 @@ def eval_operator(node: ast.BinaryOperator, env: Environment):
         right = evaluate(node.right, env)
         symbol = node.operation[:-1]
         res = arithmetic(left, right, symbol, env)
-        return assignment(node.left, res, env, ast.ASSIGN)
+        return assignment(node.left, res, env, ast.ASSIGN, ast.PUBLIC)
     else:
         symbol = node.operation
         right_node = node.right
@@ -1141,10 +1141,10 @@ def eval_braces(node: ast.BlockStmt, env: Environment) -> object:
 def eval_assignment_node(node: ast.AssignmentNode, env: Environment):
     key = node.left
     value = evaluate(node.right, env)
-    return assignment(key, value, env, node.level)
+    return assignment(key, value, env, node.level, node.privilege)
 
 
-def assignment(key: ast.Node, value, env: Environment, level):
+def assignment(key: ast.Node, value, env: Environment, level, privilege):
     t = key.node_type
     lf = key.line_num, key.file
     # print(key, value, level)
@@ -1153,15 +1153,27 @@ def assignment(key: ast.Node, value, env: Environment, level):
         if level == ast.ASSIGN:
             env.assign(key.name, value, lf)
         elif level == ast.CONST:
-            # var_type = generate_var_type(node.var_type, env)
-            env.define_const(key.name, value, lf)
+            if privilege == ast.PUBLIC:
+                env.define_const(key.name, value, lf)
+            elif privilege == ast.PRIVATE:
+                env.define_private_const(key.name, value, lf)
+            else:
+                raise lib.SplException("Unknown privilege")
         elif level == ast.VAR:
-            # var_type = generate_var_type(node.var_type, env)
-            # print(value)
-            env.define_var(key.name, value, lf)
+            if privilege == ast.PUBLIC:
+                env.define_var(key.name, value, lf)
+            elif privilege == ast.PRIVATE:
+                env.define_private_var(key.name, value, lf)
+            else:
+                raise lib.SplException("Unknown privilege")
         elif level == ast.FUNC_DEFINE:
             value: Function
-            env.define_function(key.name, value, lf, value.annotations)
+            if privilege == ast.PUBLIC:
+                env.define_function(key.name, value, lf, value.annotations)
+            elif privilege == ast.PRIVATE:
+                env.define_private_function(key.name, value, lf, value.annotations)
+            else:
+                raise lib.SplException("Unknown privilege")
         else:
             raise lib.SplException("Unknown variable level")
         return value
@@ -1743,12 +1755,12 @@ def class_inheritance(cla: Class, env: Environment, scope: Environment):
     for line in cla.body.lines:  # this step just fills the scope
         if isinstance(line, ast.AssignmentNode):
             value = evaluate(line.right, env)
-            assignment(line.left, value, scope, line.level)
+            assignment(line.left, value, scope, line.level, line.privilege)
         elif isinstance(line, ast.AnnotationNode):
             # print(line)
             assign_node: ast.AssignmentNode = get_node_in_annotation(line, env, [])
             value = evaluate(assign_node.right, env)
-            assignment(assign_node.left, value, scope, assign_node.level)
+            assignment(assign_node.left, value, scope, assign_node.level, assign_node.privilege)
         else:
             raise lib.SplException("Not an expression inside class body")
             # evaluate(line, scope)
@@ -2082,7 +2094,7 @@ def eval_increment_decrement(node: ast.InDecrementOperator, env: Environment):
         raise lib.SplException("No such operator '{}'".format(node.operation))
 
     post_val = f(current)
-    assignment(node.value, post_val, env, ast.ASSIGN)
+    assignment(node.value, post_val, env, ast.ASSIGN, ast.PUBLIC)
     if node.is_post:
         return current
     else:

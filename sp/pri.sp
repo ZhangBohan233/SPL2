@@ -1,21 +1,21 @@
 class A {
-    var _p = 5;
-    var _x;
+    private var p = 5;
+    private var x;
 
     fn A(x) {
-        this._x = x;
-        _p = 6;
+        this.x = x;
+        p = 6;
     }
 
-    fn _foo() {
-        return _x;
+    private fn foo() {
+        return x;
     }
 
-    fn foo() {
-        return _foo();
+    fn bar() {
+        return foo();
     }
 }
 
 a := new A(3);
-println(a._x);
-a._foo();
+println(a.x);
+a.bar();

@@ -621,6 +621,11 @@ class StringFormatException(SplException):
         SplException.__init__(self, msg)
 
 
+class VariableScopeException(SplException):
+    def __init__(self, msg=""):
+        SplException.__init__(self, msg)
+
+
 def make_array(*initial_elements, **kwargs):
     """
     Creates a dynamic mutable list.
