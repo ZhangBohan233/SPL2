@@ -266,7 +266,7 @@ class PyOutputStream(NativeType):
         self.stream.close()
 
 
-class Array(NativeType, Iterable):
+class Array(NativeType, Iterable, mem.EnvironmentCarrier):
     """
     A collector of sequential data with static size and dynamic type.
     """
@@ -289,6 +289,14 @@ class Array(NativeType, Iterable):
 
     def __setitem__(self, key, value):
         self.list[key] = value
+
+    def get_envs(self) -> list:
+        lst = []
+        # print(self.list)
+        for x in self.list:
+            if isinstance(x, mem.EnvironmentCarrier):
+                lst += x.get_envs()
+        return lst
 
     @classmethod
     def type_name__(cls):
@@ -398,7 +406,7 @@ class Set(NativeType, Iterable):
         return "Set"
 
 
-class System(NativeType):
+class System(NativeType, mem.EnvironmentCarrier):
     """
     A class consists of system calls
 
@@ -430,6 +438,16 @@ class System(NativeType):
         self.cwd = directory
         self.argv = argv_
         self.encoding = enc
+
+    def get_envs(self):
+        lst = []
+        if isinstance(self.stdin, mem.EnvironmentCarrier):
+            lst += self.stdin.get_envs()
+        if isinstance(self.stdout, mem.EnvironmentCarrier):
+            lst += self.stdout.get_envs()
+        if isinstance(self.stderr, mem.EnvironmentCarrier):
+            lst += self.stderr.get_envs()
+        return lst
 
     def set_in(self, in_):
         self.stdin = in_

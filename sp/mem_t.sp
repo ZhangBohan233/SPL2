@@ -20,12 +20,25 @@ gg := "333";
 y := 3;
 println(y);
 
-memory_view();
+//memory_view();
+memory.available();
+memory.gc();
+memory.available();
 
-gc();
-
-memory_view();
+//memory_view();
 
 z := new A();
 println(id(x));
 println(id(z));
+println(z);
+println(x);
+
+fn func(r) {
+    return fn () {
+        return r + 2;
+    }
+}
+
+println(func(5)());
+memory.gc();
+func(4);

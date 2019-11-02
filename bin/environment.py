@@ -9,14 +9,6 @@ SUB_SCOPE = 4
 MODULE_SCOPE = 5
 
 
-# class NullPointer:
-#     def __init__(self):
-#         pass
-#
-#     def __str__(self):
-#         return "NullPointer"
-#
-#
 class Undefined:
     def __init__(self):
         pass
@@ -60,11 +52,14 @@ UNDEFINED = Undefined()
 SUPPRESS = Annotation(lib.CharArray("Suppress"))
 OVERRIDE = Annotation(lib.CharArray("Override"))
 
+count = 0
+
 
 class Environment:
     variables: dict
     constants: dict
     scope_type: int
+    env_id: int
 
     """
     ===== Attributes =====
@@ -77,11 +72,12 @@ class Environment:
         self.variables: dict = {}  # Stack variables
         self.constants: dict = {}  # Constants
 
-        self.children = []
+        global count
+        self.env_id = count
+        count += 1
+        # print(count)
 
         self.outer: Environment = outer
-        if not self.is_global():
-            outer.children.append(self)
 
     def __str__(self):
         temp = ["Consts: "]
@@ -98,6 +94,12 @@ class Environment:
             temp.append(str(self.variables[v]))
             temp.append(", ")
         return "".join(['null' if k is None else k for k in temp])
+
+    def __hash__(self):
+        return self.env_id
+
+    def __eq__(self, other):
+        return isinstance(other, Environment) and self.env_id == other.env_id
 
     def invalidate(self):
         """

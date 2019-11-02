@@ -57,9 +57,12 @@ class Interpreter:
         natives = NativeInvokes()
         # native_graphics = gra.NativeGraphics()
         os_ = Os()
+        memory_ = MemoryManager()
+
         self.env.define_const("system", system, LINE_FILE)
         self.env.define_const("os", os_, LINE_FILE)
         self.env.define_const("natives", natives, LINE_FILE)
+        self.env.define_const("memory", memory_, LINE_FILE)
 
     def set_ast(self, ast_: ast.BlockStmt):
         """
@@ -129,9 +132,9 @@ def add_natives(env: Environment):
     env.define_const("help", NativeFunction(help_, "help", True), LINE_FILE)
     # env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
     env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
-    env.define_const("memory_view", NativeFunction(memory_view, "memory_view", True), LINE_FILE)
-    env.define_const("memory_status", NativeFunction(memory_status, "memory_status", True), LINE_FILE)
-    env.define_const("gc", NativeFunction(gc, "gc", True), LINE_FILE)
+    # env.define_const("memory_view", NativeFunction(memory_view, "memory_view", True), LINE_FILE)
+    # env.define_const("memory_status", NativeFunction(memory_status, "memory_status", True), LINE_FILE)
+    # env.define_const("gc", NativeFunction(gc, "gc", True), LINE_FILE)
 
     env.define_const("Object", OBJECT, LINE_FILE)
     env.define_const("CharArray", lib.CharArray, LINE_FILE)
@@ -143,6 +146,7 @@ def add_natives(env: Environment):
     env.define_const("System", lib.System, LINE_FILE)
     env.define_const("Os", Os, LINE_FILE)
     env.define_const("Natives", NativeInvokes, LINE_FILE)
+    env.define_const("Memory", MemoryManager, LINE_FILE)
     env.define_const("Function", Function, LINE_FILE)
     env.define_const("Graphic", gra.Graphic, LINE_FILE)
     env.define_const("EnvWrapper", EnvWrapper, LINE_FILE)
@@ -191,7 +195,7 @@ class ParameterPair:
         return self.__str__()
 
 
-class Function(lib.NativeType):
+class Function(lib.NativeType, mem.EnvironmentCarrier):
     """
     :type body: BlockStmt
     :type outer_scope: Environment
@@ -209,18 +213,21 @@ class Function(lib.NativeType):
         self.line_num = None
         self.clazz = None
 
+    def get_envs(self):
+        return [self.outer_scope]
+
     @classmethod
     def type_name__(cls) -> str:
         return "Function"
 
     def __str__(self):
-        return "Function<{}>".format(id(self))
+        return "Function<{}>".format(self.id)
 
     def __repr__(self):
         return self.__str__()
 
 
-class Class(lib.SplObject):
+class Class(lib.SplObject, mem.EnvironmentCarrier):
     def __init__(self, class_name: str, body: ast.BlockStmt, abstract: bool, superclasses: list,
                  outer_env: Environment, doc: str, line, file):
         lib.SplObject.__init__(self)
@@ -232,6 +239,9 @@ class Class(lib.SplObject):
         self.abstract = abstract
         self.line_num = line
         self.file = file
+
+    def get_envs(self):
+        return [self.outer_env]
 
     @classmethod
     def type_name__(cls):
@@ -559,7 +569,46 @@ class Os(lib.NativeType):
         exit(code)
 
 
-class ClassInstance(lib.SplObject):
+class MemoryManager(lib.NativeType):
+    def __init__(self):
+        lib.NativeType.__init__(self)
+
+    @classmethod
+    def type_name__(cls):
+        return "Memory"
+
+    @staticmethod
+    def gc(env: Environment):
+        mem.MEMORY.gc(env)
+
+    @staticmethod
+    def view(env: Environment):
+        try:
+            print_ln(env, str(mem.MEMORY))
+        except AttributeError:
+            print(str(mem.MEMORY))
+
+    @staticmethod
+    def available(env: Environment):
+        try:
+            print_ln(env, str(mem.MEMORY.available))
+        except AttributeError:
+            print(str(mem.MEMORY.available))
+
+    @staticmethod
+    def status(env: Environment):
+        try:
+            print_ln(env,
+                     "Memory used: {}, available: {}".format(mem.MEMORY.space_used(), mem.MEMORY.space_available()))
+        except AttributeError:
+            print("Memory used: {}, available: {}".format(mem.MEMORY.space_used(), mem.MEMORY.space_available()))
+
+    @staticmethod
+    def at(ptr):
+        return mem.MEMORY.ref(ptr)
+
+
+class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
     def __init__(self, env: Environment, class_name: str, clazz):
         """
         ===== Attributes =====
@@ -573,6 +622,9 @@ class ClassInstance(lib.SplObject):
         self.env = env
         # self.env.constants["this"] = self
         # self.env.define_const("this", self, LINE_FILE)
+
+    def get_envs(self):
+        return [self.env]
 
     def __getitem__(self, item):
         if self.env.contains_key("__getitem__"):
@@ -643,11 +695,14 @@ class ClassInstance(lib.SplObject):
             raise lib.TypeException("Class '{}' cannot be convert to float".format(self.class_name))
 
 
-class Module(lib.SplObject):
+class Module(lib.SplObject, mem.EnvironmentCarrier):
     def __init__(self, module_env: ModuleEnvironment):
         lib.SplObject.__init__(self)
 
         self.env = module_env
+
+    def get_envs(self):
+        return [self.env]
 
     @classmethod
     def type_name__(cls):
@@ -819,18 +874,6 @@ def id_(obj: lib.SplObject):
     return obj.id
 
 
-def gc(env):
-    mem.MEMORY.gc(env)
-
-
-def memory_view(env: Environment):
-    print_ln(env, str(mem.MEMORY))
-
-
-def memory_status(env: Environment):
-    print_ln(env, "Memory used: {}, available: {}".format(mem.MEMORY.space_used(), mem.MEMORY.space_available()))
-
-
 def help_(env: Environment, obj=None):
     """
     Prints out the doc message of a function or a class.
@@ -877,16 +920,6 @@ def help_(env: Environment, obj=None):
     else:
         print_ln(env, "help() can only be used for classes, functions, native types, or native functions.")
 
-
-# def make_spl_string(env: Environment, content):
-#     fn_name: ast.NameNode = ast.NameNode(LINE_FILE, "string")
-#     call: ast.FuncCall = ast.FuncCall(LINE_FILE, fn_name)
-#     text = content if isinstance(content, lib.CharArray) else lib.CharArray(content)
-#     args = ast.BlockStmt(LINE_FILE)
-#     args.lines.append(text)
-#     call.args = args
-#     return evaluate(call, env)
-#
 
 # helper functions
 
@@ -1406,7 +1439,7 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
     :return: the function result
     """
     if not isinstance(func, Function):
-        raise lib.TypeException("Type {} is not callable, in '{}', at line {}."
+        raise lib.TypeException("Type '{}' is not callable, in '{}', at line {}."
                                 .format(typeof(func), lf[1], lf[0]))
     if func.abstract:
         raise lib.AbstractMethodException("Abstract method is not callable, in '{}', at line {}."

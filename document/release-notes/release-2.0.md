@@ -69,7 +69,6 @@ now take the iterable as the first argument.
 #### Environment optimization:
 * Removed the heap-variable in global scope
 * Environment now stores only pointers
-* Added references to child environments
 
 #### Operators:
 * Adjusted operator precedences

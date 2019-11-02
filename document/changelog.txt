@@ -1,3 +1,9 @@
+********** SPL 2.0 Alpha 10 **********
+===== Build 0104 2019/11/01 =====
+
+* Bug fixes:
+    * Garbage collector collects little garbage, caused by children environment
+
 ********** SPL 2.0 Alpha 9 **********
 ===== Build 0103 2019/11/01 =====
 

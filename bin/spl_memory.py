@@ -25,6 +25,14 @@ def read_gc_config() -> dict:
         return read_gc_config()
 
 
+class EnvironmentCarrier:
+    def __init__(self):
+        pass
+
+    def get_envs(self) -> list:
+        raise NotImplementedError
+
+
 class Memory:
     """
     ID reserved:
@@ -66,20 +74,25 @@ class Memory:
             if self.space_available():
                 raise lib.MemoryException("Memory Overflow")
         if self.gc_gap >= self.least_gc_gap and self.space_available() < self.gc_threshold:
-            # s = self.space_available()
             self.gc(env)
             self.gc_gap = 0
-            # t = self.space_available()
-            # print("gc! from {} to {}".format(s, t))
 
     def gc(self, env):
+        s = self.space_available()
         global_env = env.get_global()
         pointed = {0}
-        mark_pointed(global_env, pointed)
+        excluded = set()
+        print(type(env).__name__)
+        self.mark_pointed(env, pointed, excluded)  # Check from innermost
+        self.mark_pointed(global_env, pointed, excluded)  # Check from outermost
         self.available = []
+        # print(len(pointed))
         for i in range(self.capacity - 1, 0, -1):
             if i not in pointed:
                 self.available.append(i)
+        t = self.space_available()
+        # print("gc! from {} to {}".format(s, t))
+        # print(len(excluded))
 
     def space_used(self):
         return self.capacity - len(self.available)
@@ -90,13 +103,18 @@ class Memory:
     def __str__(self):
         return str(self.memory)
 
-
-def mark_pointed(env, lst: set):
-    attrs_ptr = env.attributes_ptr()
-    for name in attrs_ptr:
-        lst.add(attrs_ptr[name])
-    for sub_env in env.children:
-        mark_pointed(sub_env, lst)
+    def mark_pointed(self, env, set_: set, excluded: set):
+        if env is not None and env not in excluded:
+            excluded.add(env)
+            attrs_ptr = env.attributes_ptr()
+            for name in attrs_ptr:
+                ptr = attrs_ptr[name]
+                set_.add(ptr)
+                obj = self.memory[ptr]
+                self.mark_pointed(env.outer, set_, excluded)
+                if isinstance(obj, EnvironmentCarrier):
+                    for stored in obj.get_envs():
+                        self.mark_pointed(stored, set_, excluded)
 
 
 MEMORY = Memory()
