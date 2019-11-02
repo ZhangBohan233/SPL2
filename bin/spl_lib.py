@@ -106,10 +106,11 @@ class SplObject:
     # ----- Attributes -----
     #     id: the identifier of this object, is guaranteed to be unique
     """
-    id: int
+    id: int = 0
 
     def __init__(self):
-        self.id = mem.MEMORY.allocate()
+        pass
+        # self.id = mem.MEMORY.allocate()
 
 
 class NativeType(SplObject):
@@ -617,6 +618,11 @@ class AttributeException(SplException):
 
 
 class StringFormatException(SplException):
+    def __init__(self, msg=""):
+        SplException.__init__(self, msg)
+
+
+class MemoryException(SplException):
     def __init__(self, msg=""):
         SplException.__init__(self, msg)
 

@@ -39,6 +39,7 @@ IMPORT_NODE = 34
 ANNOTATION_NODE = 35
 LAMBDA_EXPRESSION = 36
 ANONYMOUS_CLASS = 37
+THIS_NODE = 38
 
 # Variable levels
 ASSIGN = 0
@@ -243,6 +244,19 @@ class NameNode(LeafNode):
 
     def __repr__(self):
         return self.name
+
+
+class ThisNode(LeafNode):
+    def __init__(self, line):
+        LeafNode.__init__(self, line)
+
+        self.node_type = THIS_NODE
+
+    def __str__(self):
+        return "this"
+
+    def __repr__(self):
+        return self.__str__()
 
 
 class AssignmentNode(BinaryExpr):
@@ -620,6 +634,13 @@ class AbstractSyntaxTree:
             self.inner.add_literal(line, lit)
         else:
             node = LiteralNode(line, lit)
+            self.stack.append(node)
+
+    def add_this_node(self, line):
+        if self.inner:
+            self.inner.add_this_node(line)
+        else:
+            node = ThisNode(line)
             self.stack.append(node)
 
     def add_operator(self, line, op, assignment=False):

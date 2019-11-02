@@ -4,13 +4,13 @@
 * Remove the parenthesis around conditional statements     ...done
 * Variable declaration via :=     ...done
 * Remove all duplicate operators     .done
-* Manual memory management     ...discarded
+* Manual memory management
 * Lambda expression     ...done
 * Anonymous class     ...done
 * Remove heap scope     ...done
 * Implement string in spl     ...done
-* Private functions and variables
-* Rework module import system
+* Private functions and variables     ...discarded
+* Rework module import system     ...done
 
 ===== 1.7 =====
 

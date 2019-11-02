@@ -2,7 +2,7 @@
 
 Release date: 
 
-## New Features
+## New Language Features
 
 #### New syntax:
 * Variable declaration and assignment via operator ":="
@@ -38,6 +38,22 @@ package names. For example, `import "xx/yy/zz.sp"`
 #### Object Oriented Native Functions:
 * Moved `f_open`, `exec`, `exit` into native class `os`
 
+#### New native functions:
+* `gc()` triggers garbage collection process manually
+* `memory_view()` prints out memory items
+* `memory_status()` prints out memory status
+
+## SPL Memory Management System
+
+#### Direct Memory Management:
+* SPL now takes control of objects memory allocation
+* Memory configurations in 'mem_configs.cfg'
+
+#### Garbage Collector:
+
+
+## Library Updates:
+
 #### New Built-in Library:
 * `stats.sp` Provides basic statistical functions
 
@@ -52,6 +68,8 @@ now take the iterable as the first argument.
 
 #### Environment optimization:
 * Removed the heap-variable in global scope
+* Environment now stores only pointers
+* Added references to child environments
 
 #### Operators:
 * Adjusted operator precedences
@@ -59,3 +77,8 @@ now take the iterable as the first argument.
 ## Key Feature Updates:
 
 #### Even Slower
+
+## Bug Fixes:
+* Lines in a loop after `break` or `continue` still get executed (Since
+1.5)
+* The right side of "instanceof" not referencable in class itself

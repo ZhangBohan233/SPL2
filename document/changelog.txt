@@ -1,3 +1,16 @@
+********** SPL 2.0 Alpha 9 **********
+===== Build 0103 2019/11/01 =====
+
+* Rework on memory management system:
+    * Spl memory management now takes control of the pointer system
+    * Environments now only stores pointers
+    * Environments stores a list of children environments
+    * Garbage collection system
+* Removed attribute "this" from class instance, "this" is now a keyword
+* New native functions:
+    * gc
+    * memory_view
+
 ********** SPL 2.0 Alpha 8 **********
 ===== Build 0102 2019/10/30 =====
 

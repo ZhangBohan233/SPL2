@@ -129,6 +129,9 @@ def add_natives(env: Environment):
     env.define_const("help", NativeFunction(help_, "help", True), LINE_FILE)
     # env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
     env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
+    env.define_const("memory_view", NativeFunction(memory_view, "memory_view", True), LINE_FILE)
+    env.define_const("memory_status", NativeFunction(memory_status, "memory_status", True), LINE_FILE)
+    env.define_const("gc", NativeFunction(gc, "gc", True), LINE_FILE)
 
     env.define_const("Object", OBJECT, LINE_FILE)
     env.define_const("CharArray", lib.CharArray, LINE_FILE)
@@ -568,7 +571,8 @@ class ClassInstance(lib.SplObject):
         self.clazz: Class = clazz
         self.class_name = class_name
         self.env = env
-        self.env.constants["this"] = self
+        # self.env.constants["this"] = self
+        # self.env.define_const("this", self, LINE_FILE)
 
     def __getitem__(self, item):
         if self.env.contains_key("__getitem__"):
@@ -603,7 +607,7 @@ class ClassInstance(lib.SplObject):
                 raise lib.TypeException("'__repr__' must return 'String' object")
             return result.env.get("lit", LINE_FILE).literal
         else:
-            return "<{} at {}>".format(self.class_name, self.id)
+            return "<{} at {}>".format(self.class_name, id_(self))
 
     def __setitem__(self, item):
         if self.env.contains_key("__setitem__"):
@@ -623,8 +627,8 @@ class ClassInstance(lib.SplObject):
             return result.env.get("lit", LINE_FILE).literal
         else:
             attr = self.env.attributes()
-            attr.pop("this")
-            return "<{} at {}>: {}".format(self.class_name, self.id, lib.make_pair(attr))
+            # attr.pop("this")
+            return "<{} at {}>: {}".format(self.class_name, id_(self), lib.make_pair(attr))
 
     def __int__(self):
         if self.class_name == "String":
@@ -760,15 +764,15 @@ def dir_(env: Environment, obj):
     """
     lst = []
     if isinstance(obj, Class):
-        mem.MEMORY.store_status()
+        # mem.MEMORY.store_status()
         clazz: Class = env.get_class(obj.class_name)
         instance: ClassInstance = create_instance(clazz, env, clazz.outer_env)
-        exc = {"this"}
+        # exc = {"this"}
         # for attr in instance.env.variables:
         for attr in instance.env.attributes():
-            if attr not in exc:
-                lst.append(attr)
-        mem.MEMORY.restore_status()
+            # if attr not in exc:
+            lst.append(attr)
+        # mem.MEMORY.restore_status()
     elif isinstance(obj, NativeFunction):
         for nt in lib.NativeType.__subclasses__():
             nt: lib.NativeType
@@ -815,6 +819,18 @@ def id_(obj: lib.SplObject):
     return obj.id
 
 
+def gc(env):
+    mem.MEMORY.gc(env)
+
+
+def memory_view(env: Environment):
+    print_ln(env, str(mem.MEMORY))
+
+
+def memory_status(env: Environment):
+    print_ln(env, "Memory used: {}, available: {}".format(mem.MEMORY.space_used(), mem.MEMORY.space_available()))
+
+
 def help_(env: Environment, obj=None):
     """
     Prints out the doc message of a function or a class.
@@ -845,19 +861,18 @@ def help_(env: Environment, obj=None):
         print_ln(env, class_doc)
         print_ln(env, "---------- Methods ----------")
 
-        mem.MEMORY.store_status()
+        # mem.MEMORY.store_status()
         clazz: Class = env.get_class(obj.class_name)
         instance: ClassInstance = create_instance(clazz, env, clazz.outer_env)
         for attr_name in instance.env.attributes():
-            if attr_name != "this":
-                attr = instance.env.get(attr_name, (0, "help"))
-                if isinstance(attr, Function):
-                    print_ln(env, "   " + _get_func_title(attr, attr_name))
-                    print_ln(env, _get_func_doc(attr))
-                elif isinstance(attr, ast.AssignmentNode):
-                    print_ln(env, "   " + attr_name)
-                # print(_get_doc(instance.env.get(attr, (0, "help"))))
-        mem.MEMORY.restore_status()
+            # if attr_name != "this":
+            attr = instance.env.get(attr_name, (0, "help"))
+            if isinstance(attr, Function):
+                print_ln(env, "   " + _get_func_title(attr, attr_name))
+                print_ln(env, _get_func_doc(attr))
+            elif isinstance(attr, ast.AssignmentNode):
+                print_ln(env, "   " + attr_name)
+        # mem.MEMORY.restore_status()
         print_ln(env, "========== End of help ==========")
     else:
         print_ln(env, "help() can only be used for classes, functions, native types, or native functions.")
@@ -1252,6 +1267,7 @@ def create_instance(clazz: Class, call_env: Environment, class_define_env: Envir
 
     # print(scope.variables)
     instance = ClassInstance(scope, clazz.class_name, clazz)
+    scope.instance = instance
     attrs = scope.attributes()
     for k in attrs:
         v = attrs[k]
@@ -1515,6 +1531,12 @@ def get_node_in_annotation(node: ast.AnnotationNode, env: Environment, ann_list:
     throw_spl_exception("AnnotationException", (node.line_num, node.file), env)
 
 
+# ID_COMPARATORS = {
+#     "===",
+#     "!=="
+# }
+
+
 def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
     if symbol in stl.LAZY:
         if left is None or isinstance(left, bool):
@@ -1539,13 +1561,23 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             return class_arithmetic(left, right, symbol, env, right_node)
         else:
             return raw_type_comparison(left, right, symbol)
+#
+#
+# def id_compare(left_key: str, right_key: str, symbol, env) -> bool:
+#     if symbol == "===":
+#         if isinstance(lk, lib.SplObject) and isinstance(right, lib.SplObject):
+#             return id_(env, left_key)
+#     elif symbol == "!==":
+#         return
+#     else:
+#         raise lib.AttributeException("Object does not support operation '{}'".format(symbol))
 
 
 def class_arithmetic(left: Class, right, symbol, env: Environment, right_node):
     if symbol == "===":
-        return isinstance(right, Class) and left.id == right.id
+        return isinstance(right, Class) and id_(left) == id_(right)
     elif symbol == "!==":
-        return not isinstance(right, Class) or left.id != right.id
+        return not isinstance(right, Class) or id_(left) != id_(right)
     elif symbol == "subclassof":
         if isinstance(right, Class):
             return is_subclass_of(left, right)
@@ -1559,9 +1591,9 @@ def class_arithmetic(left: Class, right, symbol, env: Environment, right_node):
 
 def instance_arithmetic(left: ClassInstance, right, symbol, env: Environment):
     if symbol == "===":
-        return isinstance(right, ClassInstance) and left.id == right.id
+        return isinstance(right, ClassInstance) and id_(left) == id_(right)
     elif symbol == "!==":
-        return not isinstance(right, ClassInstance) or left.id != right.id
+        return not isinstance(right, ClassInstance) or id_(left) != id_(right)
     elif symbol == "instanceof":
         if isinstance(right, Class):
             return is_subclass_of(left.clazz, right)
@@ -1580,10 +1612,10 @@ def instance_arithmetic(left: ClassInstance, right, symbol, env: Environment):
 
 
 def native_arithmetic(left: lib.NativeType, right, symbol: str):
-    if symbol == "===" or symbol == "is":
-        return isinstance(right, lib.NativeType) and left.id == right.id
+    if symbol == "===":
+        return isinstance(right, lib.NativeType) and id_(left) == id_(right)
     elif symbol == "!==":
-        return not isinstance(right, lib.NativeType) or left.id != right.id
+        return not isinstance(right, lib.NativeType) or id_(left) != id_(right)
     elif symbol == "instanceof":
         if isinstance(right, NativeFunction):
             return left.type_name__() == right.name
@@ -2128,6 +2160,13 @@ def eval_name_node(node: ast.NameNode, env: Environment):
     return env.get(node.name, (node.line_num, node.file))
 
 
+def eval_this_node(node: ast.ThisNode, env: Environment):
+    while not env.is_class():
+        env = env.outer
+    instance_env: ClassEnvironment = env
+    return instance_env.instance
+
+
 # Operation table of every non-abstract node types
 NODE_TABLE = {
     ast.LITERAL_NODE: lambda n, env: lib.CharArray(n.literal),
@@ -2153,7 +2192,8 @@ NODE_TABLE = {
     ast.IMPORT_NODE: eval_import_node,
     ast.ANNOTATION_NODE: eval_ann_node,
     ast.LAMBDA_EXPRESSION: eval_lambda,
-    ast.ANONYMOUS_CLASS: eval_anonymous_class
+    ast.ANONYMOUS_CLASS: eval_anonymous_class,
+    ast.THIS_NODE: eval_this_node
 }
 
 

@@ -244,6 +244,8 @@ class Parser:
                         parser.add_unary(line, "assert")
                     elif sym == "namespace":
                         parser.add_unary(line, "namespace")
+                    elif sym == "this":
+                        parser.add_this_node(line)
                     elif sym == "++" or sym == "--":
                         parser.add_increment_decrement(line, sym)
                     elif sym in stl.TERNARY_OPERATORS and \

@@ -24,3 +24,15 @@ class B(A):
 if __name__ == "__main__":
     b = B()
     b._bar()
+    import time
+
+    st = time.time()
+
+    a = "_1"
+    for i in range(1000000):
+        # c = isinstance(b, A)
+        c = hasattr(b, a)
+
+    end = time.time()
+    print(end - st)
+    print(c)
