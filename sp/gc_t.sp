@@ -1,40 +1,63 @@
-class A {
-    var si;
+class Int {
+    var n;
 
-    fn A(i) {
-        si = string(i);
+    fn Int(n) {
+        this.n = n;
+    }
+
+    fn __lt__(x) {
+        return n < x.n;
+    }
+
+    fn __add__(x) {
+        return new Int(n + x.n);
+    }
+
+    fn __sub__(x) {
+        return new Int(n - x.n);
     }
 }
 
-lst0 := [];
-for i := 0; i < 10; i++ {
-    lst0.append(i);
+one := new Int(1);
+two := new Int(2);
+
+fn fib(n) {
+    //memory.gc();
+    if n < two {
+        return n;
+    } else {
+        return fib(n - one) + fib(n - two);
+    }
 }
 
-memory.status();
-memory.gc();
-memory.status();
-
-lst := [];
-st := system.time();
-for i := 0; i < 10; i++ {
-    lst.append(new A(i));
+fn f1(n) {
+    return f3(n) + f3(n);
 }
-end := system.time();
-println(end - st);
-memory.status();
-memory.gc();
-memory.status();
 
-println(lst0);
+fn f3(n) {
+    memory.gc();
 
-fn loop() {
-    lst := [];
-    for i:=0; i < 20; i++ {
+    return n + new Int(1);
+}
+
+f1(new Int(5));
+
+fn nest(n) {
+    return fn() {
         memory.gc();
-        println(i);
-        lst.append(i);
+        return n;
     }
-    println(lst);
 }
-loop();
+
+fn out(n) {
+    return nest(n)() + nest(n)();
+}
+
+out(new Int(4));
+
+println(one);
+free(one);
+println(one);
+
+import "util"
+util.memoryView(get_env());

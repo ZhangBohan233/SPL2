@@ -1,8 +1,20 @@
 ********** SPL 2.0 Alpha 10 **********
-===== Build 0104 2019/11/01 =====
+===== Build 0104 2019/11/03 =====
 
-* Bug fixes:
-    * Garbage collector collects little garbage, caused by children environment
+* Garbage Collector Updates:
+    * Fixed the garbage collector collects little objects
+    * Provides function 'free' to manually free an object
+    * 'memory.gc' only requires garbage collection, garbage collector only gc when not in expr
+* Moves memory related functions to 'memory' object
+* Moves some native types into 'spl_native_types.py':
+    * Array
+    * Pair
+    * Set
+    * File
+* Array, Pair, Set now uses environment
+* Separated node table
+* Known bug:
+    * Thread
 
 ********** SPL 2.0 Alpha 9 **********
 ===== Build 0103 2019/11/01 =====

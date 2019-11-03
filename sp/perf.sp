@@ -75,4 +75,6 @@ if main() {
     const t6 = system.time();
     print("string: ");
     println(t6 - t5);
+
+    memory.status();
 }

@@ -1,5 +1,6 @@
 from bin import spl_lexer as lex, spl_ast as ast, spl_token_lib as stl, spl_parser as psr, spl_memory as mem
 import bin.spl_lib as lib
+import bin.spl_native_types as typ
 import bin.graphic_lib as gra
 import script
 import multiprocessing
@@ -53,7 +54,8 @@ class Interpreter:
         """
         add_natives(self.env)
         # obj = lib.SplObject()
-        system = lib.System(lib.Array(*parse_args(self.argv)), lib.CharArray(self.dir), self.encoding, self.in_out_err)
+        system = lib.System(typ.Array(*parse_args(self.argv)), lib.CharArray(self.dir),
+                            self.encoding, self.in_out_err)
         natives = NativeInvokes()
         # native_graphics = gra.NativeGraphics()
         os_ = Os()
@@ -114,9 +116,9 @@ def add_natives(env: Environment):
     env.define_const("print", NativeFunction(print_, "print", True), LINE_FILE)
     env.define_const("println", NativeFunction(print_ln, "println", True), LINE_FILE)
     env.define_const("type", NativeFunction(typeof, "type"), LINE_FILE)
-    env.define_const("pair", NativeFunction(lib.make_pair, "pair"), LINE_FILE)
-    env.define_const("array", NativeFunction(lib.make_array, "array"), LINE_FILE)
-    env.define_const("set", NativeFunction(lib.make_set, "set"), LINE_FILE)
+    env.define_const("pair", NativeFunction(make_pair, "pair"), LINE_FILE)
+    env.define_const("array", NativeFunction(make_array, "array"), LINE_FILE)
+    env.define_const("set", NativeFunction(make_set, "set"), LINE_FILE)
     env.define_const("int", NativeFunction(lib.to_int, "int"), LINE_FILE)
     env.define_const("float", NativeFunction(lib.to_float, "float"), LINE_FILE)
     env.define_const("chars", NativeFunction(to_chars, "chars"), LINE_FILE)
@@ -132,16 +134,17 @@ def add_natives(env: Environment):
     env.define_const("help", NativeFunction(help_, "help", True), LINE_FILE)
     # env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
     env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
+    env.define_const("free", NativeFunction(free, "free"), LINE_FILE)
     # env.define_const("memory_view", NativeFunction(memory_view, "memory_view", True), LINE_FILE)
     # env.define_const("memory_status", NativeFunction(memory_status, "memory_status", True), LINE_FILE)
     # env.define_const("gc", NativeFunction(gc, "gc", True), LINE_FILE)
 
     env.define_const("Object", OBJECT, LINE_FILE)
     env.define_const("CharArray", lib.CharArray, LINE_FILE)
-    env.define_const("Array", lib.Array, LINE_FILE)
-    env.define_const("Pair", lib.Pair, LINE_FILE)
-    env.define_const("Set", lib.Set, LINE_FILE)
-    env.define_const("File", lib.File, LINE_FILE)
+    env.define_const("Array", typ.Array, LINE_FILE)
+    env.define_const("Pair", typ.Pair, LINE_FILE)
+    env.define_const("Set", typ.Set, LINE_FILE)
+    env.define_const("File", typ.File, LINE_FILE)
     env.define_const("Thread", Thread, LINE_FILE)
     env.define_const("System", lib.System, LINE_FILE)
     env.define_const("Os", Os, LINE_FILE)
@@ -201,7 +204,7 @@ class Function(lib.NativeType, mem.EnvironmentCarrier):
     :type outer_scope: Environment
     """
 
-    def __init__(self, params, body, outer, abstract: bool, annotations: lib.Set, doc):
+    def __init__(self, params, body, outer, abstract: bool, annotations, doc):
         lib.NativeType.__init__(self)
         self.params: [ParameterPair] = params
         self.annotations = annotations
@@ -262,7 +265,7 @@ class EnvWrapper(lib.NativeType):
     def __init__(self, env: Environment):
         lib.NativeType.__init__(self)
 
-        self.attrs = lib.Pair({})
+        self.attrs = typ.Pair({})
         attrs = env.attributes()
         for key in attrs:
             self.attrs[lib.CharArray(key)] = attrs[key]
@@ -341,7 +344,7 @@ class NativeInvokes(lib.NativeType):
             raise lib.TypeException("Object '{}': {} is not a native-iterable object.".format(typeof(itr), itr))
 
     @staticmethod
-    def thread(env: Environment, target: Function, args: lib.Array):
+    def thread(env: Environment, target: Function, args: typ.Array):
         """
         Creates a new spl Thread.
 
@@ -419,7 +422,7 @@ class NativeInvokes(lib.NativeType):
         """
         while not env.is_global() and not env.is_class():
             env = env.outer
-        pair = lib.Pair({})
+        pair = typ.Pair({})
         for name in env.variables:
             pair.put(lib.CharArray(name), env.variables[name])
         return pair
@@ -434,7 +437,7 @@ class NativeInvokes(lib.NativeType):
         """
         while not env.is_global() and not env.is_class():
             env = env.outer
-        pair = lib.Pair({})
+        pair = typ.Pair({})
         for name in env.constants:
             pair.put(lib.CharArray(name), env.constants[name])
         return pair
@@ -489,14 +492,14 @@ class Os(lib.NativeType):
         return "Os"
 
     @staticmethod
-    def list_files(path) -> lib.Array:
+    def list_files(path) -> typ.Array:
         """
         Returns a <List> consists of all files under the directory <path>.
 
         :param path: the directory path
         :return: a <List> consists of all files under the directory <path>
         """
-        return lib.Array([lib.CharArray(x) for x in os.listdir(path)])
+        return typ.Array([lib.CharArray(x) for x in os.listdir(path)])
 
     @staticmethod
     def f_open(env: Environment, file, mode=None, encoding=None):
@@ -530,7 +533,7 @@ class Os(lib.NativeType):
                 f = open(full_path, str(mode), encoding=str(enc_s))
             else:
                 f = open(full_path, str(mode))
-            file = lib.File(f, str(mode))
+            file = typ.File(f, str(mode))
             return file
         except IOError as e:
             return -1
@@ -544,13 +547,13 @@ class Os(lib.NativeType):
             if isinstance(args[0], lib.CharArray):
                 line = str(args[0])
                 return _exec_line(line, path)
-            elif isinstance(args[0], lib.Array):
+            elif isinstance(args[0], typ.Array):
                 line = " ".join(str(x) for x in args[0])
                 return _exec_line(line, path)
             else:
                 raise lib.TypeException("Unknown argument type of exec()")
         elif len(args) == 2:
-            if isinstance(args[0], lib.CharArray) and isinstance(args[1], lib.Array):
+            if isinstance(args[0], lib.CharArray) and isinstance(args[1], typ.Array):
                 line = str(args[0]) + " " + " ".join(str(x) for x in args[1])
                 return _exec_line(line, path)
             else:
@@ -579,7 +582,8 @@ class MemoryManager(lib.NativeType):
 
     @staticmethod
     def gc(env: Environment):
-        mem.MEMORY.gc(env)
+        # mem.MEMORY.gc(env)
+        mem.MEMORY.request_gc()
 
     @staticmethod
     def view(env: Environment):
@@ -624,6 +628,7 @@ class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
         # self.env.define_const("this", self, LINE_FILE)
 
     def get_envs(self):
+        # print(6666666666666666666)
         return [self.env]
 
     def __getitem__(self, item):
@@ -680,7 +685,7 @@ class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
         else:
             attr = self.env.attributes()
             # attr.pop("this")
-            return "<{} at {}>: {}".format(self.class_name, id_(self), lib.make_pair(attr))
+            return "<{} at {}>: {}".format(self.class_name, id_(self), make_pair(attr))
 
     def __int__(self):
         if self.class_name == "String":
@@ -738,6 +743,13 @@ def to_repr(v) -> lib.CharArray:
         return lib.CharArray(v)
 
 
+def free(v):
+    if isinstance(v, lib.SplObject):
+        mem.MEMORY.free(v)
+    else:
+        raise lib.MemoryException("Cannot free a '{}' object".format(typeof(v)))
+
+
 def print_ln(env: Environment, s="", stream=None):
     """
     Prints out message to an output stream, with a new line at the end and the stream flushed.
@@ -787,6 +799,44 @@ def typeof(obj) -> lib.CharArray:
     else:
         t = type(obj)
         return lib.CharArray(t.__name__)
+
+
+def make_array(*initial_elements, **kwargs):
+    """
+    Creates a dynamic mutable list.
+
+    :param initial_elements: the elements that the list initially contains
+    :return: a reference of the newly created <List> object
+    """
+    if 'length' in kwargs:
+        lst = [None for _ in range(kwargs['length'])]
+        return typ.Array(*lst)
+    else:
+        return typ.Array(*initial_elements)
+
+
+def make_pair(initial_elements: dict = None):
+    """
+    Creates a key-value pair.
+
+    :param initial_elements: the elements that the pair initially contains
+    :return: a reference of the newly created <Pair> object
+    """
+    if initial_elements is None:
+        initial_elements = {}
+    pair = typ.Pair(initial_elements)
+    return pair
+
+
+def make_set(*initial_elements):
+    """
+    Creates a set.
+
+    :param initial_elements: the elements that the set initially contains
+    :return: a reference of the newly created <Set> object
+    """
+    s = typ.Set(*initial_elements)
+    return s
 
 
 def eval_(env: Environment, expr: lib.CharArray) -> ast.BlockStmt:
@@ -840,7 +890,7 @@ def dir_(env: Environment, obj):
     else:
         raise lib.TypeException("No such type '{}'".format(typeof(obj)))
     lst.sort()
-    return lib.Array(*lst)
+    return typ.Array(*lst)
 
 
 def get_env(env: Environment, obj=None):
@@ -1156,34 +1206,40 @@ def is_subclass_of(child_class: Class, target_class: Class) -> bool:
 
 def eval_operator(node: ast.BinaryOperator, env: Environment):
     left = evaluate(node.left, env)
+    # env.add_gc_exclusion(left)
     if node.assignment:
         right = evaluate(node.right, env)
+        # env.add_gc_exclusion(right)
         symbol = node.operation[:-1]
         res = arithmetic(left, right, symbol, env)
-        return assignment(node.left, res, env, ast.ASSIGN)
+        rtn = assignment(node.left, res, env, ast.ASSIGN)
+        # env.remove_gc_exclusion(right)
     else:
         symbol = node.operation
         right_node = node.right
-        return arithmetic(left, right_node, symbol, env)
+        rtn = arithmetic(left, right_node, symbol, env)
+
+    # env.remove_gc_exclusion(left)
+    return rtn
 
 
 def eval_braces(node: ast.BlockStmt, env: Environment) -> object:
     if len(node.lines) > 0:
         first = node.lines[0]
         if isinstance(first, ast.AssignmentNode):  # this is a pair
-            result = lib.Pair({})
+            result = typ.Pair({})
             for ass in node.lines:
                 key = evaluate(ass.left, env)
                 value = evaluate(ass.right, env)
                 result.put(key, value)
         else:
-            result = lib.Set()
+            result = typ.Set()
             for n in node.lines:
                 value = evaluate(n, env)
                 result.add(value)
         return result
     else:
-        return lib.Pair({})
+        return typ.Pair({})
 
 
 def eval_assignment_node(node: ast.AssignmentNode, env: Environment):
@@ -1383,10 +1439,10 @@ def parse_function_args(args: list, call_env: Environment) -> (list, dict):
             elif arg.node_type == ast.UNARY_OPERATOR:
                 arg: ast.UnaryOperator
                 if arg.operation == "unpack":
-                    args_list: lib.Array = evaluate(arg.value, call_env)
+                    args_list: typ.Array = evaluate(arg.value, call_env)
                     proceed_unpack(args_list, pos_args, lf, call_env)
                 elif arg.operation == "kw_unpack":
-                    args_pair: lib.Pair = evaluate(arg.value, call_env)
+                    args_pair: typ.Pair = evaluate(arg.value, call_env)
                     proceed_kw_unpack(args_pair, kwargs, lf, call_env)
                 elif arg.operation == "neg" or arg.operation == "new":
                     pos_args.append(evaluate(arg, call_env))
@@ -1402,7 +1458,7 @@ def parse_function_args(args: list, call_env: Environment) -> (list, dict):
 
 
 def proceed_unpack(args_list, pos_args, lf, call_env):
-    if isinstance(args_list, lib.Array):
+    if isinstance(args_list, typ.Array):
         for an_arg in args_list:
             pos_args.append(an_arg)
     elif isinstance(args_list, ClassInstance):
@@ -1416,7 +1472,7 @@ def proceed_unpack(args_list, pos_args, lf, call_env):
 
 def proceed_kw_unpack(args_pair, kwargs: dict, lf, call_env):
     # print(args_pair)
-    if isinstance(args_pair, lib.Pair):
+    if isinstance(args_pair, typ.Pair):
         for an_arg in args_pair:
             kwargs[an_arg.literal] = args_pair[an_arg]
     elif isinstance(args_pair, ClassInstance):
@@ -1447,6 +1503,8 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
 
     scope = FunctionEnvironment(func.outer_scope)
     params = func.params
+
+    # call_env.get_global().add_call(scope)
 
     pos_args, kwargs = parse_function_args(args, call_env)
 
@@ -1481,7 +1539,9 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
         raise lib.ArgumentException("Too many arguments for function at <{}>, in file '{}', at line {}"
                                     .format(func.id, lf[1], lf[0]))
 
-    return evaluate(func.body, scope)
+    rtn = evaluate(func.body, scope)
+    # call_env.get_global().remove_call(scope)
+    return rtn
 
 
 def call_unpack(name: str, pos_args: list, index, scope: Environment, call_env: Environment, lf) -> int:
@@ -1492,13 +1552,13 @@ def call_unpack(name: str, pos_args: list, index, scope: Environment, call_env: 
         lst.append(e)
         index += 1
 
-    spl_lst = lib.Array(*lst)
+    spl_lst = typ.Array(*lst)
     scope.define_var(name, spl_lst, lf)
     return index
 
 
 def call_kw_unpack(name: str, kwargs: dict, scope: Environment, call_env: Environment, lf):
-    pair = lib.Pair({})
+    pair = typ.Pair({})
     for k in kwargs:
         v = kwargs[k]
         e = evaluate(v, call_env)
@@ -1509,6 +1569,7 @@ def call_kw_unpack(name: str, kwargs: dict, scope: Environment, call_env: Enviro
 
 def eval_dot(node: ast.Dot, env: Environment):
     instance = evaluate(node.left, env)
+    # env.add_gc_exclusion(instance)
     obj = node.right
     t = obj.node_type
     lf = node.line_num, node.file
@@ -1516,12 +1577,9 @@ def eval_dot(node: ast.Dot, env: Environment):
     if t == ast.NAME_NODE:
         obj: ast.NameNode
         if isinstance(instance, lib.NativeType):
-            return native_types_attr_invoke(instance, obj)
+            rtn = native_types_attr_invoke(instance, obj)
         elif isinstance(instance, ClassInstance) or isinstance(instance, Module):
-            # name: str = obj.name
-            # if name[0] == "_" and name[-1] != "_":
-            #     print(11)
-            return evaluate(obj, instance.env)
+            rtn = evaluate(obj, instance.env)
         else:
             raise lib.TypeException("Type '{}' does not have attribute '{}', in '{}', at line {}"
                                     .format(typeof(instance), obj.name, node.file, node.line_num))
@@ -1530,19 +1588,22 @@ def eval_dot(node: ast.Dot, env: Environment):
         call_obj, args = make_arg_list(obj)
         if isinstance(instance, lib.NativeType):
             try:
-                return native_types_call(instance, call_obj, args, env)
+                rtn = native_types_call(instance, call_obj, args, env)
             except IndexError as ie:
                 raise lib.IndexOutOfRangeException(str(ie) + " in file: '{}', at line {}"
                                                    .format(node.file, node.line_num))
         elif isinstance(instance, ClassInstance) or isinstance(instance, Module):
             func = evaluate(obj.call_obj, instance.env)
             result = call_function(args, lf, func, env)
-            return result
+            rtn = result
         else:
             raise lib.TypeException("Not a class instance; {} instead, in file '{}', at line {}"
                                     .format(typeof(instance), node.file, node.line_num))
     else:
         raise lib.InterpretException("Unknown Syntax, in file '{}', at line {}".format(node.file, node.line_num))
+
+    # env.remove_gc_exclusion(instance)
+    return rtn
 
 
 def get_node_in_annotation(node: ast.AnnotationNode, env: Environment, ann_list: list) -> (ast.Node, ast.Node):
@@ -1580,20 +1641,26 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             raise lib.InterpretException("Operator '||' '&&' do not support type.")
     else:
         right = evaluate(right_node, env)
+        # env.add_gc_exclusion(right)
         if left is None or isinstance(left, bool):
-            return primitive_arithmetic(left, right, symbol)
+            rtn = primitive_arithmetic(left, right, symbol)
         elif isinstance(left, int) or isinstance(left, float):
-            return num_arithmetic(left, right, symbol)
+            rtn = num_arithmetic(left, right, symbol)
         elif isinstance(left, lib.CharArray):
-            return string_arithmetic(left, right, symbol)
+            rtn = string_arithmetic(left, right, symbol)
         elif isinstance(left, lib.NativeType):  # NativeTypes other than String
-            return native_arithmetic(left, right, symbol)
+            rtn = native_arithmetic(left, right, symbol)
         elif isinstance(left, ClassInstance):
-            return instance_arithmetic(left, right, symbol, env)
+            rtn = instance_arithmetic(left, right, symbol, env)
         elif isinstance(left, Class):
-            return class_arithmetic(left, right, symbol, env, right_node)
+            rtn = class_arithmetic(left, right, symbol, env, right_node)
         else:
-            return raw_type_comparison(left, right, symbol)
+            rtn = raw_type_comparison(left, right, symbol)
+
+        # env.remove_gc_exclusion(right)
+        return rtn
+
+
 #
 #
 # def id_compare(left_key: str, right_key: str, symbol, env) -> bool:
@@ -1678,7 +1745,11 @@ STRING_ARITHMETIC_TABLE = {
 
 
 def string_arithmetic(left, right, symbol):
-    return STRING_ARITHMETIC_TABLE[symbol](left, right)
+    if symbol in STRING_ARITHMETIC_TABLE:
+        return STRING_ARITHMETIC_TABLE[symbol](left, right)
+    else:
+        raise lib.TypeException("String literal '{}' and '{}' does not support operation '{}'"
+                                .format(left, right, symbol))
 
 
 RAW_TYPE_COMPARISON_TABLE = {
@@ -1701,17 +1772,17 @@ def raw_type_comparison(left, right, symbol):
 
 def primitive_and_or(left, right_node: ast.Node, symbol, env: Environment):
     if left:
-        if symbol == "&&" or symbol == "and":
+        if symbol == "&&":
             right = evaluate(right_node, env)
             return right
-        elif symbol == "||" or symbol == "or":
+        elif symbol == "||":
             return True
         else:
             raise lib.TypeException("Unsupported operation for primitive type")
     else:
-        if symbol == "&&" or symbol == "and":
+        if symbol == "&&":
             return False
-        elif symbol == "||" or symbol == "or":
+        elif symbol == "||":
             right = evaluate(right_node, env)
             return right
         else:
@@ -1736,17 +1807,17 @@ def primitive_arithmetic(left, right, symbol):
 
 def num_and_or(left, right_node: ast.Node, symbol, env: Environment):
     if left:
-        if symbol == "||" or symbol == "or":
+        if symbol == "||":
             return True
-        elif symbol == "&&" or symbol == "and":
+        elif symbol == "&&":
             right = evaluate(right_node, env)
             return right
         else:
             raise lib.TypeException("No such symbol")
     else:
-        if symbol == "&&" or symbol == "and":
+        if symbol == "&&":
             return False
-        elif symbol == "||" or symbol == "or":
+        elif symbol == "||":
             right = evaluate(right_node, env)
             return right
         else:
@@ -1882,6 +1953,9 @@ def eval_block(node: ast.BlockStmt, env: Environment):
     else:
         result = None
         for line in node.lines:
+            if mem.MEMORY.gc_request:
+                if env.get_global().gc_able():
+                    mem.MEMORY.gc(env)
             result = evaluate(line, env)
         return result
 
@@ -1930,7 +2004,7 @@ def eval_lambda(node: ast.LambdaExpression, env: Environment):
     else:
         raise lib.TypeException("Unexpected argument syntax for lambda expression, in file '{}', at line {}"
                                 .format(node.file, node.line_num))
-    f: Function = Function(pairs, node.right, env, False, lib.Set(), "")
+    f: Function = Function(pairs, node.right, env, False, typ.Set(), "")
     f.file = node.file
     f.line_num = node.line_num
     return f
@@ -2015,7 +2089,7 @@ def eval_def(node: ast.DefStmt, env: Environment):
         pair = ParameterPair(name, value)
         params_lst.append(pair)
 
-    annotations = lib.Set()
+    annotations = typ.Set()
     for ann in node.annotations:
         annotations.add(ann)
     f = Function(params_lst, node.body, env, node.abstract, annotations, node.doc)
@@ -2200,17 +2274,34 @@ def eval_this_node(node: ast.ThisNode, env: Environment):
     return instance_env.instance
 
 
+EXPR_TABLE = {
+    ast.ASSIGNMENT_NODE: eval_assignment_node,
+    ast.DOT: eval_dot,
+    ast.BINARY_OPERATOR: eval_operator,
+    ast.UNARY_OPERATOR: eval_unary_expression,
+    ast.TERNARY_OPERATOR: eval_ternary_expression,
+    ast.INDEXING_NODE: eval_indexing_node
+}
+
+
+def eval_expr(node, env: Environment):
+    env.get_global().expr_count += 1
+    rtn = EXPR_TABLE[node.node_type](node, env)
+    env.get_global().expr_count -= 1
+    return rtn
+
+
 # Operation table of every non-abstract node types
 NODE_TABLE = {
     ast.LITERAL_NODE: lambda n, env: lib.CharArray(n.literal),
     ast.NAME_NODE: eval_name_node,
     ast.BREAK_STMT: lambda n, env: env.break_loop(),
     ast.CONTINUE_STMT: lambda n, env: env.pause_loop(),
-    ast.ASSIGNMENT_NODE: eval_assignment_node,
-    ast.DOT: eval_dot,
-    ast.BINARY_OPERATOR: eval_operator,
-    ast.UNARY_OPERATOR: eval_unary_expression,
-    ast.TERNARY_OPERATOR: eval_ternary_expression,
+    ast.ASSIGNMENT_NODE: eval_expr,
+    ast.DOT: eval_expr,
+    ast.BINARY_OPERATOR: eval_expr,
+    ast.UNARY_OPERATOR: eval_expr,
+    ast.TERNARY_OPERATOR: eval_expr,
     ast.BLOCK_STMT: eval_block,
     ast.IF_STMT: eval_if_stmt,
     ast.WHILE_STMT: eval_while,
@@ -2221,7 +2312,7 @@ NODE_TABLE = {
     ast.TRY_STMT: eval_try_catch,
     ast.UNDEFINED_NODE: lambda n, env: UNDEFINED,
     ast.IN_DECREMENT_OPERATOR: eval_increment_decrement,
-    ast.INDEXING_NODE: eval_indexing_node,
+    ast.INDEXING_NODE: eval_expr,
     ast.IMPORT_NODE: eval_import_node,
     ast.ANNOTATION_NODE: eval_ann_node,
     ast.LAMBDA_EXPRESSION: eval_lambda,

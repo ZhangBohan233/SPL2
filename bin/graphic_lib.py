@@ -1,4 +1,5 @@
 from bin import spl_interpreter as inter
+import bin.spl_native_types as typ
 import bin.spl_lib as lib
 from tkinter import filedialog
 import tkinter
@@ -44,7 +45,7 @@ class Graphic(lib.NativeType):
         self.tk.configure(cfg)
 
     @staticmethod
-    def file_dialog(types: lib.Pair):
+    def file_dialog(types: typ.Pair):
         res = filedialog.askopenfilename(filetypes=[(str(types[ext]), str(ext)) for ext in types])
         if res is not None:
             return lib.CharArray(res)
@@ -71,7 +72,7 @@ def proceed_function(ftn, env):
         return str(ftn)
     elif isinstance(ftn, inter.ClassInstance):
         return str(ftn)
-    elif isinstance(ftn, lib.Array):
-        return ftn.list
+    elif isinstance(ftn, typ.Array):
+        return ftn.as_py_list()
     else:
         return ftn

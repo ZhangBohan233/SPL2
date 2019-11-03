@@ -4,6 +4,9 @@ import os
 from bin import spl_memory as mem
 
 
+LINE_FILE = 0, "spl_lib"
+
+
 def replace_bool_none(string: str):
     """
     Returns a str with 'None', 'True', and 'False' replaced with 'null', 'true', and 'false'.
@@ -106,11 +109,10 @@ class SplObject:
     # ----- Attributes -----
     #     id: the identifier of this object, is guaranteed to be unique
     """
-    id: int = 0
+    id: int
 
     def __init__(self):
-        pass
-        # self.id = mem.MEMORY.allocate()
+        self.id = mem.MEMORY.allocate(self)
 
 
 class NativeType(SplObject):
@@ -266,146 +268,6 @@ class PyOutputStream(NativeType):
         self.stream.close()
 
 
-class Array(NativeType, Iterable, mem.EnvironmentCarrier):
-    """
-    A collector of sequential data with static size and dynamic type.
-    """
-    def __init__(self, *initial):
-        NativeType.__init__(self)
-
-        self.list = [*initial]
-
-    def __iter__(self):
-        return (x for x in self.list)
-
-    def __str__(self):
-        return str([CharArray(get_string_repr(v)) for v in self.list])
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __getitem__(self, item):
-        return self.list[item]
-
-    def __setitem__(self, key, value):
-        self.list[key] = value
-
-    def get_envs(self) -> list:
-        lst = []
-        # print(self.list)
-        for x in self.list:
-            if isinstance(x, mem.EnvironmentCarrier):
-                lst += x.get_envs()
-        return lst
-
-    @classmethod
-    def type_name__(cls):
-        return "Array"
-
-    def contains(self, item):
-        return item in self.list
-
-    def size(self):
-        return len(self.list)
-
-    def sort(self):
-        return self.list.sort()
-
-    def sub_array(self, from_, to=None):
-        length = self.size()
-        end = length if to is None else to
-        if from_ < 0 or end > length:
-            raise IndexOutOfRangeException("Sub array index out of range")
-        return Array(self.list[from_: end])
-
-    def reverse(self):
-        return self.list.reverse()
-
-
-class Pair(NativeType, Iterable):
-    def __init__(self, initial: dict):
-        NativeType.__init__(self)
-
-        self.pair = initial.copy()
-
-    def __iter__(self):
-        return (k for k in self.pair)
-
-    def __str__(self):
-        return str({CharArray(get_string_repr(k)): CharArray(get_string_repr(self.pair[k])) for k in self.pair})
-
-    def __repr__(self):
-        return self.__str__()
-
-    def __getitem__(self, item):
-        return self.pair[item]
-
-    def __setitem__(self, key, value):
-        self.pair[key] = value
-
-    def contains(self, item):
-        return item in self.pair
-
-    def get(self, key):
-        return self.__getitem__(key)
-
-    def put(self, key, value):
-        self.__setitem__(key, value)
-
-    def size(self):
-        return len(self.pair)
-
-    @classmethod
-    def type_name__(cls):
-        return "Pair"
-
-
-class Set(NativeType, Iterable):
-    def __init__(self, *initial):
-        NativeType.__init__(self)
-
-        self.set = set(initial)
-
-    def __iter__(self):
-        return (v for v in self.set)
-
-    def __str__(self):
-        return str(set([CharArray(get_string_repr(v)) for v in self.set]))
-
-    def __repr__(self):
-        return self.__str__()
-
-    def get(self, item):
-        for x in self.set:
-            if x == item:
-                return x
-
-    def size(self):
-        return len(self.set)
-
-    def add(self, item):
-        self.set.add(item)
-
-    def pop(self):
-        self.set.pop()
-
-    def clear(self):
-        self.set.clear()
-
-    def union(self, other):
-        self.set.union(other)
-
-    def update(self, s):
-        self.set.update(s)
-
-    def contains(self, item):
-        return item in self.set
-
-    @classmethod
-    def type_name__(cls):
-        return "Set"
-
-
 class System(NativeType, mem.EnvironmentCarrier):
     """
     A class consists of system calls
@@ -419,7 +281,7 @@ class System(NativeType, mem.EnvironmentCarrier):
         stdin: system standard input stream, ClassInstance extends InputStream
     """
 
-    argv: Array
+    argv = None  # Array
     cwd: CharArray
     encoding: str
     native_in = None
@@ -429,7 +291,7 @@ class System(NativeType, mem.EnvironmentCarrier):
     stderr = None  # ClassInstance <NativeOutputStream>
     stdin = None  # ClassInstance <NativeInputStream>
 
-    def __init__(self, argv_: Array, directory: CharArray, enc: str, in_out_err):
+    def __init__(self, argv_, directory: CharArray, enc: str, in_out_err):
         NativeType.__init__(self)
 
         self.native_in = PyInputStream(in_out_err[0])
@@ -479,98 +341,6 @@ class System(NativeType, mem.EnvironmentCarrier):
     @classmethod
     def type_name__(cls):
         return "System"
-
-
-class File(NativeType):
-    """
-    An opened file object.
-    """
-
-    def __init__(self, fp, mode):
-        NativeType.__init__(self)
-
-        self.mode: str = mode
-        self.fp = fp
-
-    def read_one(self):
-        """
-        Reads one unit from the file.
-
-        :return: the next unit in tis file
-        """
-        r = self.fp.read(1)
-        if r:
-            if self.mode == "r":
-                return CharArray(r)
-            elif self.mode == "rb":
-                return int(self.fp.read(1)[0])
-            else:
-                raise PyIOException("Wrong mode")
-        else:
-            return None
-
-    def read(self):
-        """
-        Reads all contents of this file.
-
-        :return: all contents of this file
-        """
-        if self.mode == "r":
-            return CharArray(self.fp.read())
-        elif self.mode == "rb":
-            return Array(*list(self.fp.read()))
-        else:
-            raise PyIOException("Wrong mode")
-
-    def readline(self):
-        """
-        Reads the next line from this file.
-
-        This method only works for text file.
-
-        :return: the next line from this file
-        """
-        if self.mode == "r":
-            s = self.fp.readline()
-            if s:
-                return CharArray(s)
-            else:
-                return None
-        else:
-            raise PyIOException("Wrong mode")
-
-    def write(self, s):
-        """
-        Writes the content to this file
-
-        :param s: the content to be written
-        """
-        if "w" in self.mode:
-            if "b" in self.mode:
-                self.fp.write(bytes(s))
-            else:
-                self.fp.write(str(s))
-        else:
-            raise PyIOException("Wrong mode")
-
-    def flush(self):
-        """
-        Flushes all buffered contents to the file.
-        """
-        if "w" in self.mode:
-            self.fp.flush()
-        else:
-            raise PyIOException("Wrong mode")
-
-    def close(self):
-        """
-        Closes this file.
-        """
-        self.fp.close()
-
-    @classmethod
-    def type_name__(cls):
-        return "File"
 
 
 # Exceptions
@@ -643,44 +413,6 @@ class StringFormatException(SplException):
 class MemoryException(SplException):
     def __init__(self, msg=""):
         SplException.__init__(self, msg)
-
-
-def make_array(*initial_elements, **kwargs):
-    """
-    Creates a dynamic mutable list.
-
-    :param initial_elements: the elements that the list initially contains
-    :return: a reference of the newly created <List> object
-    """
-    if 'length' in kwargs:
-        lst = [None for _ in range(kwargs['length'])]
-        return Array(*lst)
-    else:
-        return Array(*initial_elements)
-
-
-def make_pair(initial_elements: dict = None):
-    """
-    Creates a key-value pair.
-
-    :param initial_elements: the elements that the pair initially contains
-    :return: a reference of the newly created <Pair> object
-    """
-    if initial_elements is None:
-        initial_elements = {}
-    pair = Pair(initial_elements)
-    return pair
-
-
-def make_set(*initial_elements):
-    """
-    Creates a set.
-
-    :param initial_elements: the elements that the set initially contains
-    :return: a reference of the newly created <Set> object
-    """
-    s = Set(*initial_elements)
-    return s
 
 
 def to_int(v):

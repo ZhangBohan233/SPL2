@@ -38,11 +38,6 @@ package names. For example, `import "xx/yy/zz.sp"`
 #### Object Oriented Native Functions:
 * Moved `f_open`, `exec`, `exit` into native class `os`
 
-#### New native functions:
-* `gc()` triggers garbage collection process manually
-* `memory_view()` prints out memory items
-* `memory_status()` prints out memory status
-
 ## SPL Memory Management System
 
 #### Direct Memory Management:
@@ -50,7 +45,19 @@ package names. For example, `import "xx/yy/zz.sp"`
 * Memory configurations in 'mem_configs.cfg'
 
 #### Garbage Collector:
+* The garbage collector frees the slots occupied by unused objects 
+from memory for next use. The garbage collection process will be 
+triggered automatically if the memory usage exceeds the threshold.
+* User can only request for garbage collection process, but it's up to
+SPL to decide when to start the collection process
 
+#### New Native Functions for Memory Management:
+`free(obj)` to manually free the memory location occupied by `obj`
+
+#### Memory Manager in SPL:
+* `memory.gc()` makes a garbage collection request
+* `memory.available()`, `memory.status()`, `memory.view` for memory 
+visualizing
 
 ## Library Updates:
 
@@ -66,12 +73,15 @@ now take the iterable as the first argument.
 
 ## Optimizations:
 
-#### Environment optimization:
+#### Environment Optimization:
 * Removed the heap-variable in global scope
 * Environment now stores only pointers
 
 #### Operators:
 * Adjusted operator precedences
+
+#### Structure Optimizations:
+* Split `Array`, `Pair`, `Set`, `File` into 'spl_native_types.py'
 
 ## Key Feature Updates:
 

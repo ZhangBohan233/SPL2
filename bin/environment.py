@@ -7,6 +7,7 @@ FUNCTION_SCOPE = 2
 LOOP_SCOPE = 3
 SUB_SCOPE = 4
 MODULE_SCOPE = 5
+NATIVE_OBJECT_SCOPE = 6
 
 
 class Undefined:
@@ -21,7 +22,7 @@ class Undefined:
 
 
 class Annotation(lib.NativeType):
-    def __init__(self, name: lib.CharArray, content: lib.Pair = None):
+    def __init__(self, name: lib.CharArray, content = None):
         lib.NativeType.__init__(self)
         self.name = name
         self.params = content
@@ -46,7 +47,7 @@ class Annotation(lib.NativeType):
         return self.__str__()
 
 
-NULLPTR = 0
+NULLPTR = mem.Pointer(0)
 UNDEFINED = Undefined()
 
 SUPPRESS = Annotation(lib.CharArray("Suppress"))
@@ -101,6 +102,12 @@ class Environment:
     def __eq__(self, other):
         return isinstance(other, Environment) and self.env_id == other.env_id
 
+    # def add_gc_exclusion(self, obj):
+    #     self.outer.add_gc_exclusion(obj)
+    #
+    # def remove_gc_exclusion(self, obj):
+    #     self.outer.remove_gc_exclusion(obj)
+
     def invalidate(self):
         """
         Re-initialize this scope.
@@ -120,7 +127,7 @@ class Environment:
         return False
 
     def is_class(self):
-        raise NotImplementedError
+        return False
 
     def is_sub(self):
         """
@@ -144,7 +151,10 @@ class Environment:
 
     def get_global_const(self, key):
         ptr = self.get_global_const_ptr(key)
-        return mem.MEMORY.ref(ptr)
+        if isinstance(ptr, mem.Pointer):
+            return mem.MEMORY.ref(ptr)
+        else:
+            return ptr
 
     def get_global_const_ptr(self, key):
         if self.is_global():
@@ -201,33 +211,40 @@ class Environment:
         """
         raise lib.SplException("Not inside loop.")
 
-    def define_function(self, key, value, lf, annotations: lib.Set):
+    def define_function(self, key, value, lf, annotations):
         if not annotations.contains(OVERRIDE) and \
                 not annotations.contains(SUPPRESS) and \
                 key[0].islower() and self._local_contains(key):
             lib.compile_time_warning("Warning: re-declaring method '{}' in '{}', at line {}".format(key, lf[1], lf[0]))
         # self.variables[key] = value
-        self.variables[key] = mem.MEMORY.allocate(value, self)
+        self.variables[key] = mem.MEMORY.point(value, self)  # must be reference type
 
     def define_var(self, key, value, lf):
         if self._local_contains(key):
             raise lib.NameException("Name '{}' is already defined in this scope, in '{}', at line {}"
                                     .format(key, lf[1], lf[0]))
         else:
-            self.variables[key] = mem.MEMORY.allocate(value, self)
-            # self.variables[key] = value
+            if isinstance(value, lib.SplObject):
+                self.variables[key] = mem.MEMORY.point(value, self)  # reference type
+            else:
+                self.variables[key] = value  # primitive type
 
     def define_const(self, key, value, lf):
         if self.contains_key(key):
             raise lib.NameException("Name '{}' is already defined in this scope, in {}, at line {}"
                                     .format(key, lf[1], lf[0]))
         else:
-            self.constants[key] = mem.MEMORY.allocate(value, self)
-            # self.constants[key] = value
+            if isinstance(value, lib.SplObject):
+                self.constants[key] = mem.MEMORY.point(value, self)  # reference type
+            else:
+                self.constants[key] = value  # primitive type
 
     def assign(self, key, value, lf):
-        ptr = mem.MEMORY.allocate(value, self)
-        self.assign_ptr(key, ptr, lf)
+        if isinstance(value, lib.SplObject):
+            ptr = mem.MEMORY.point(value, self)
+            self.assign_ptr(key, ptr, lf)
+        else:
+            self.assign_ptr(key, value, lf)
 
     def assign_ptr(self, key, ptr, lf):
         if key in self.variables:
@@ -335,7 +352,10 @@ class Environment:
         :return: the value corresponding to the key. Instance will be returned if the value is a pointer.
         """
         ptr = self.get_ptr(key, line_file)
-        return mem.MEMORY.ref(ptr)
+        if isinstance(ptr, mem.Pointer):
+            return mem.MEMORY.ref(ptr)
+        else:
+            return ptr
 
     def get_ptr(self, key: str, line_file: tuple):
         v = self._inner_get_ptr(key)
@@ -378,7 +398,14 @@ class Environment:
     def attributes(self):
         # print(self.attributes_ptr())
         d = self.attributes_ptr()
-        return {x: mem.MEMORY.ref(d[x]) for x in d}
+        pd = {}
+        for k in d:
+            p = d[k]
+            if isinstance(p, mem.Pointer):
+                pd[k] = mem.MEMORY.ref(p)
+            else:
+                pd[k] = p
+        return pd
 
 
 class MainAbstractEnvironment(Environment):
@@ -389,16 +416,13 @@ class MainAbstractEnvironment(Environment):
 
         self.namespaces = set()
 
-    def is_class(self):
-        raise NotImplementedError
-
     def is_sub(self):
         return False
 
     def add_namespace(self, namespace: Environment):
         self.namespaces.add(namespace)
 
-    def search_namespace_ptr(self, key: str) -> int:
+    def search_namespace_ptr(self, key: str) -> mem.Pointer:
         for ns in self.namespaces:
             if key in ns.constants:
                 return ns.constants[key]
@@ -428,9 +452,6 @@ class SubAbstractEnvironment(Environment):
     def is_sub(self):
         return True
 
-    def is_class(self):
-        return False
-
     def add_namespace(self, namespace):
         raise lib.TypeException("Sub environment does not support namespace definition")
 
@@ -445,13 +466,30 @@ class GlobalEnvironment(MainAbstractEnvironment):
     def __init__(self):
         MainAbstractEnvironment.__init__(self, GLOBAL_SCOPE, None)
 
+        self.expr_count = 0
+        # self.no_gc = set()  # set of int
+        # self.call_stack = set()  # records all environments that is currently active
         # self.modules = {}  # module path : Module objects
 
-    def is_class(self):
-        return False
+    # def add_gc_exclusion(self, obj):
+    #     if isinstance(obj, lib.SplObject):
+    #         self.no_gc.add(obj.id)
+    #
+    # def remove_gc_exclusion(self, obj):
+    #     if isinstance(obj, lib.SplObject):
+    #         self.no_gc.discard(obj.id)
+
+    def gc_able(self):
+        return self.expr_count == 0
 
     def is_global(self):
         return True
+    #
+    # def add_call(self, env: Environment):
+    #     self.call_stack.add(env)
+    #
+    # def remove_call(self, env: Environment):
+    #     self.call_stack.discard(env)
 
 
 class ModuleEnvironment(MainAbstractEnvironment):
@@ -472,6 +510,18 @@ class ClassEnvironment(MainAbstractEnvironment):
         return True
 
 
+class NativeObjectEnvironment(MainAbstractEnvironment):
+
+    def __init__(self):
+        MainAbstractEnvironment.__init__(self, NATIVE_OBJECT_SCOPE, None)
+
+    def delete_var(self, key, lf):
+        if not self.contains_key(key):
+            lib.NameException("Name '{}' is not defined in this scope, in {}, at line {}"
+                              .format(key, lf[1], lf[0]))
+        self.variables.pop(key)
+
+
 class FunctionEnvironment(MainAbstractEnvironment):
     def __init__(self, outer):
         MainAbstractEnvironment.__init__(self, FUNCTION_SCOPE, outer)
@@ -479,15 +529,14 @@ class FunctionEnvironment(MainAbstractEnvironment):
         self.terminated = False
         self.exit_value = None
 
-    def is_class(self):
-        return False
-
     def terminate(self, exit_value):
         self.terminated = True
-        self.exit_value = exit_value
+        # self.exit_value = exit_value
+        self.define_var("return value", exit_value, (0, "Environment"))
 
     def terminate_value(self):
-        return self.exit_value
+        return self.get("return value", (0, "Environment"))
+        # return self.exit_value
 
     def is_terminated(self):
         return self.terminated
