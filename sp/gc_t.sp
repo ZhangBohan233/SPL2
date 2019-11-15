@@ -40,7 +40,7 @@ fn f3(n) {
     return n + new Int(1);
 }
 
-f1(new Int(5));
+println(f1(new Int(5)));
 
 fn nest(n) {
     return fn() {
@@ -53,11 +53,11 @@ fn out(n) {
     return nest(n)() + nest(n)();
 }
 
-out(new Int(4));
+println(out(new Int(4)));
 
 println(one);
 free(one);
 println(one);
 
-import "util"
-util.memoryView(get_env());
+//import "util"
+//util.memoryView(get_env());

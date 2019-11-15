@@ -1,5 +1,13 @@
 ===== Build 0103 =====
 
+100 k while loop with ++: ~1760 ms
+20 fib: ~990 ms
+500 elements merge sort: ~2870 ms
+1000 objects creation: ~1370 ms
+1000 single char string concatenation: ~1650 ms
+
+===== Build 0103 =====
+
 100 k while loop with ++: ~1260 ms
 20 fib: ~720 ms
 500 elements merge sort: ~1760 ms

@@ -355,7 +355,7 @@ class NativeInvokes(lib.NativeType):
         """
         call = ast.FuncCall(LINE_FILE, target)
         call.args = ast.BlockStmt(LINE_FILE)
-        for x in args.list:
+        for x in args:
             call.args.add_line(x)
 
         process = multiprocessing.Process(target=call_function, args=(call, target, env))
@@ -582,8 +582,9 @@ class MemoryManager(lib.NativeType):
 
     @staticmethod
     def gc(env: Environment):
-        # mem.MEMORY.gc(env)
-        mem.MEMORY.request_gc()
+        mem.MEMORY.gc(env)
+        # mem.MEMORY.gc_by_env(env)
+        # mem.MEMORY.request_gc()
 
     @staticmethod
     def view(env: Environment):

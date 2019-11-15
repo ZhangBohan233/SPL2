@@ -67,11 +67,16 @@ class Memory:
             raise lib.MemoryException("Memory Overflow")
         loc = self.available.pop()
         self.memory[loc] = obj
-        # if isinstance(obj, lib.SplObject):
-        #     obj.id = loc
         return loc
 
     def point(self, obj, env) -> Pointer:
+        """
+        Returns the pointer points to the <SPLObject> object.
+
+        :param obj:
+        :param env:
+        :return: he pointer points to the <SPLObject> object
+        """
         # self.gc_gap += 1
         self.check_gc(env)
         return Pointer(obj.id)
@@ -83,14 +88,10 @@ class Memory:
         self.available.append(obj.id)
 
     def check_gc(self, env):
-        # if self.space_available() <= 0:
-        #     self.gc(env)
-        #     self.gc_gap = 0
-        #     if self.space_available():
-        #         raise lib.MemoryException("Memory Overflow")
         if self.space_available() < self.gc_threshold:
-            self.gc_request = True
             # self.gc(env)
+            self.gc_request = True
+            # self.gc_by_env(env)
             # self.gc_gap = 0
 
     def request_gc(self):
@@ -99,23 +100,14 @@ class Memory:
     def gc(self, env):
         self.gc_request = False
         # s = self.space_available()
-        # global_env = env.get_global()
         pointed = {0}
         excluded = set()
         self.mark_pointed(env, pointed, excluded)  # Check from innermost
-        # backup = self.available.copy()
         self.available = []
-        # print(len(excluded))
         for i in range(self.capacity - 1, 0, -1):
             if i not in pointed:
                 self.available.append(i)
-
-        # last_cleared = []
-        # for x in self.available:
-        #     if x not in backup:
-        #         last_cleared.append(x)
-        #         print(self.memory[x])
-        # print(last_cleared)
+                # self.memory[i] = None
 
         # t = self.space_available()
         # print("gc! from {} to {}".format(s, t))
@@ -126,14 +118,11 @@ class Memory:
     def space_available(self):
         return len(self.available)
 
-    def __str__(self):
-        return str(self.memory)
-
-    def mark_pointed(self, env, pointed: set, excluded: set):
-        if env is not None and env not in excluded:
+    def mark_pointed(self, env, pointed: set, scanned: set):
+        if env is not None and env not in scanned:
             # print(type(env))
-            excluded.add(env)
-            self.mark_pointed(env.outer, pointed, excluded)
+            scanned.add(env)
+            self.mark_pointed(env.outer, pointed, scanned)
             attrs_ptr = env.attributes_ptr()
             for name in attrs_ptr:
                 ptr = attrs_ptr[name]
@@ -144,11 +133,10 @@ class Memory:
                     if isinstance(obj, EnvironmentCarrier):
                         # print(obj)
                         for stored in obj.get_envs():
-                            self.mark_pointed(stored, pointed, excluded)
-            # if env.is_global():
-            #     print("====", env.no_gc)
-                # for id_ in env.no_gc:
-                #     pointed.add(id_)
+                            self.mark_pointed(stored, pointed, scanned)
+
+    def __str__(self):
+        return str(self.memory)
 
 
 MEMORY = Memory()

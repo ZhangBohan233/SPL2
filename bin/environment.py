@@ -22,7 +22,7 @@ class Undefined:
 
 
 class Annotation(lib.NativeType):
-    def __init__(self, name: lib.CharArray, content = None):
+    def __init__(self, name: lib.CharArray, content=None):
         lib.NativeType.__init__(self)
         self.name = name
         self.params = content
@@ -76,7 +76,6 @@ class Environment:
         global count
         self.env_id = count
         count += 1
-        # print(count)
 
         self.outer: Environment = outer
 
@@ -467,29 +466,12 @@ class GlobalEnvironment(MainAbstractEnvironment):
         MainAbstractEnvironment.__init__(self, GLOBAL_SCOPE, None)
 
         self.expr_count = 0
-        # self.no_gc = set()  # set of int
-        # self.call_stack = set()  # records all environments that is currently active
-        # self.modules = {}  # module path : Module objects
-
-    # def add_gc_exclusion(self, obj):
-    #     if isinstance(obj, lib.SplObject):
-    #         self.no_gc.add(obj.id)
-    #
-    # def remove_gc_exclusion(self, obj):
-    #     if isinstance(obj, lib.SplObject):
-    #         self.no_gc.discard(obj.id)
 
     def gc_able(self):
         return self.expr_count == 0
 
     def is_global(self):
         return True
-    #
-    # def add_call(self, env: Environment):
-    #     self.call_stack.add(env)
-    #
-    # def remove_call(self, env: Environment):
-    #     self.call_stack.discard(env)
 
 
 class ModuleEnvironment(MainAbstractEnvironment):

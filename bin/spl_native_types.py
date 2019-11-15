@@ -43,14 +43,6 @@ class Array(lib.NativeType, lib.Iterable, mem.EnvironmentCarrier):
     def as_py_list(self):
         return [self.env.get(str(i), LINE_FILE) for i in range(self.length)]
 
-    # def get_envs(self) -> list:
-    #     lst = []
-    #     # print(self.list)
-    #     for x in self.list:
-    #         if isinstance(x, mem.EnvironmentCarrier):
-    #             lst += x.get_envs()
-    #     return lst
-
     def get_pointers(self):
         pass
 
@@ -66,15 +58,13 @@ class Array(lib.NativeType, lib.Iterable, mem.EnvironmentCarrier):
         return self.length
         # return len(self.list)
 
-    # def sort(self):
-    #     return self.list.sort()
-
-    # def sub_array(self, from_, to=None):
-    #     length = self.size()
-    #     end = length if to is None else to
-    #     if from_ < 0 or end > length:
-    #         raise IndexOutOfRangeException("Sub array index out of range")
-    #     return Array(self.list[from_: end])
+    def sub_array(self, from_, to=None):
+        length = self.size()
+        end = length if to is None else to
+        if from_ < 0 or end > length:
+            raise lib.IndexOutOfRangeException("Sub array index out of range")
+        # return Array(self.list[from_: end])
+        return Array([self[i] for i in range(from_, to, 1)])
 
     # def reverse(self):
     #     return self.list.reverse()
