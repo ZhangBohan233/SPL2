@@ -26,20 +26,18 @@ class Pointer:
     def __init__(self, ptr: int):
         self.ptr = ptr
 
+    def __hash__(self):
+        return hash(self.ptr)
+
+    def __eq__(self, other):
+        return isinstance(other, Pointer) and other.ptr == self.ptr
+
 
 class EnvironmentCarrier:
     def __init__(self):
         pass
 
     def get_envs(self) -> list:
-        raise NotImplementedError
-
-
-class NativeCollection:
-    def __init__(self):
-        pass
-
-    def get_pointers(self):
         raise NotImplementedError
 
 
@@ -89,8 +87,8 @@ class Memory:
 
     def check_gc(self, env):
         if self.space_available() < self.gc_threshold:
-            # self.gc(env)
-            self.gc_request = True
+            self.gc(env)
+            # self.gc_request = True
             # self.gc_by_env(env)
             # self.gc_gap = 0
 
@@ -99,7 +97,7 @@ class Memory:
 
     def gc(self, env):
         self.gc_request = False
-        # s = self.space_available()
+        s = self.space_available()
         pointed = {0}
         excluded = set()
         self.mark_pointed(env, pointed, excluded)  # Check from innermost
@@ -109,8 +107,8 @@ class Memory:
                 self.available.append(i)
                 # self.memory[i] = None
 
-        # t = self.space_available()
-        # print("gc! from {} to {}".format(s, t))
+        t = self.space_available()
+        print("gc! from {} to {}".format(s, t))
 
     def space_used(self):
         return self.capacity - len(self.available)
@@ -118,10 +116,20 @@ class Memory:
     def space_available(self):
         return len(self.available)
 
+    def mark_operands(self, env, pointed: set, scanned: set):
+        for op in env.operands:
+            if isinstance(op, Pointer):
+                pointed.add(op.ptr)
+                obj = self.memory[op.ptr]
+                if isinstance(obj, EnvironmentCarrier):
+                    # print(obj)
+                    for stored in obj.get_envs():
+                        self.mark_pointed(stored, pointed, scanned)
+
     def mark_pointed(self, env, pointed: set, scanned: set):
         if env is not None and env not in scanned:
-            # print(type(env))
             scanned.add(env)
+            self.mark_operands(env, pointed, scanned)
             self.mark_pointed(env.outer, pointed, scanned)
             attrs_ptr = env.attributes_ptr()
             for name in attrs_ptr:
@@ -129,7 +137,6 @@ class Memory:
                 if isinstance(ptr, Pointer):
                     pointed.add(ptr.ptr)
                     obj = self.memory[ptr.ptr]
-                    # obj = env.get(name, (0, "GC"))
                     if isinstance(obj, EnvironmentCarrier):
                         # print(obj)
                         for stored in obj.get_envs():

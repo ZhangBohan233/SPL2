@@ -22,7 +22,7 @@ one := new Int(1);
 two := new Int(2);
 
 fn fib(n) {
-    //memory.gc();
+    memory.gc();
     if n < two {
         return n;
     } else {
@@ -30,34 +30,19 @@ fn fib(n) {
     }
 }
 
+println(fib(new Int(6)));
+
 fn f1(n) {
-    return f3(n) + f3(n);
+    return f3(n) + f3(n) + f3(n);
 }
 
 fn f3(n) {
     memory.gc();
 
-    return n + new Int(1);
+    return n + new Int(1) + new Int(1);
 }
 
 println(f1(new Int(5)));
-
-fn nest(n) {
-    return fn() {
-        memory.gc();
-        return n;
-    }
-}
-
-fn out(n) {
-    return nest(n)() + nest(n)();
-}
-
-println(out(new Int(4)));
-
-println(one);
-free(one);
-println(one);
 
 //import "util"
 //util.memoryView(get_env());

@@ -1207,20 +1207,20 @@ def is_subclass_of(child_class: Class, target_class: Class) -> bool:
 
 def eval_operator(node: ast.BinaryOperator, env: Environment):
     left = evaluate(node.left, env)
-    # env.add_gc_exclusion(left)
+    env.add_operand(left)
     if node.assignment:
         right = evaluate(node.right, env)
-        # env.add_gc_exclusion(right)
+        env.add_operand(right)
         symbol = node.operation[:-1]
         res = arithmetic(left, right, symbol, env)
         rtn = assignment(node.left, res, env, ast.ASSIGN)
-        # env.remove_gc_exclusion(right)
+        env.remove_operand(right)
     else:
         symbol = node.operation
         right_node = node.right
         rtn = arithmetic(left, right_node, symbol, env)
 
-    # env.remove_gc_exclusion(left)
+    env.remove_operand(left)
     return rtn
 
 
@@ -1321,20 +1321,20 @@ def init_class(node: ast.Node, call_env: Environment, class_define_env=None):
     if isinstance(node, ast.NameNode):
         clazz = class_define_env.get_class(node.name)
         if isinstance(clazz, Class):
-            return create_instance(clazz, call_env, class_define_env)
+            instance = create_instance(clazz, call_env, class_define_env)
         elif issubclass(clazz, lib.NativeType):
-            return create_native_instance(clazz, call_env)
+            instance = create_native_instance(clazz, call_env)
         else:
             raise lib.TypeException("Unknown type to instantiate, int file '{}', at line {}"
                                     .format(node.file, node.line_num))
     elif isinstance(node, ast.FuncCall):
         clazz = evaluate(node.call_obj, class_define_env)
         if isinstance(clazz, Class):
-            return create_instance(clazz, call_env, class_define_env, node)
+            instance = create_instance(clazz, call_env, class_define_env, node)
         elif isinstance(clazz, Function):
-            return create_instance(clazz.clazz, call_env, class_define_env, node)
+            instance = create_instance(clazz.clazz, call_env, class_define_env, node)
         elif issubclass(clazz, lib.NativeType):
-            return create_native_instance(clazz, call_env, node)
+            instance = create_native_instance(clazz, call_env, node)
         else:
             raise lib.TypeException("Unknown type to instantiate, int file '{}', at line {}"
                                     .format(node.file, node.line_num))
@@ -1344,6 +1344,7 @@ def init_class(node: ast.Node, call_env: Environment, class_define_env=None):
     else:
         raise lib.TypeException("Could not create class instance of type '{}', in file '{}', at line {}"
                                 .format(typeof(node), node.file, node.line_num))
+    return instance
 
 
 def create_instance(clazz: Class, call_env: Environment, class_define_env: Environment,
@@ -1505,8 +1506,6 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
     scope = FunctionEnvironment(func.outer_scope)
     params = func.params
 
-    # call_env.get_global().add_call(scope)
-
     pos_args, kwargs = parse_function_args(args, call_env)
 
     variable_length = False  # Whether there exists unpack arguments
@@ -1541,7 +1540,6 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
                                     .format(func.id, lf[1], lf[0]))
 
     rtn = evaluate(func.body, scope)
-    # call_env.get_global().remove_call(scope)
     return rtn
 
 
@@ -1570,7 +1568,7 @@ def call_kw_unpack(name: str, kwargs: dict, scope: Environment, call_env: Enviro
 
 def eval_dot(node: ast.Dot, env: Environment):
     instance = evaluate(node.left, env)
-    # env.add_gc_exclusion(instance)
+    env.add_operand(instance)
     obj = node.right
     t = obj.node_type
     lf = node.line_num, node.file
@@ -1603,7 +1601,7 @@ def eval_dot(node: ast.Dot, env: Environment):
     else:
         raise lib.InterpretException("Unknown Syntax, in file '{}', at line {}".format(node.file, node.line_num))
 
-    # env.remove_gc_exclusion(instance)
+    env.remove_operand(instance)
     return rtn
 
 
@@ -1626,12 +1624,6 @@ def get_node_in_annotation(node: ast.AnnotationNode, env: Environment, ann_list:
     throw_spl_exception("AnnotationException", (node.line_num, node.file), env)
 
 
-# ID_COMPARATORS = {
-#     "===",
-#     "!=="
-# }
-
-
 def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
     if symbol in stl.LAZY:
         if left is None or isinstance(left, bool):
@@ -1642,6 +1634,7 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             raise lib.InterpretException("Operator '||' '&&' do not support type.")
     else:
         right = evaluate(right_node, env)
+        env.add_operand(right)
         # env.add_gc_exclusion(right)
         if left is None or isinstance(left, bool):
             rtn = primitive_arithmetic(left, right, symbol)
@@ -1659,19 +1652,8 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             rtn = raw_type_comparison(left, right, symbol)
 
         # env.remove_gc_exclusion(right)
+        env.remove_operand(right)
         return rtn
-
-
-#
-#
-# def id_compare(left_key: str, right_key: str, symbol, env) -> bool:
-#     if symbol == "===":
-#         if isinstance(lk, lib.SplObject) and isinstance(right, lib.SplObject):
-#             return id_(env, left_key)
-#     elif symbol == "!==":
-#         return
-#     else:
-#         raise lib.AttributeException("Object does not support operation '{}'".format(symbol))
 
 
 def class_arithmetic(left: Class, right, symbol, env: Environment, right_node):
@@ -1954,9 +1936,9 @@ def eval_block(node: ast.BlockStmt, env: Environment):
     else:
         result = None
         for line in node.lines:
-            if mem.MEMORY.gc_request:
-                if env.get_global().gc_able():
-                    mem.MEMORY.gc(env)
+            # if mem.MEMORY.gc_request:
+            #     if env.get_global().gc_able():
+            #         mem.MEMORY.gc(env)
             result = evaluate(line, env)
         return result
 
@@ -2188,7 +2170,13 @@ def eval_unary_expression(node: ast.UnaryOperator, env: Environment):
 
 def eval_conditional_operator(left: ast.Node, mid: ast.Node, right: ast.Node, env: Environment):
     cond = evaluate(left, env)
-    return evaluate(mid, env) if cond else evaluate(right, env)
+    env.add_operand(cond)
+    mid_r = evaluate(mid, env)
+    env.add_operand(mid_r)
+    right_r = evaluate(right, env)
+    env.remove_operand(cond)
+    env.remove_operand(mid_r)
+    return mid_r if cond else right_r
 
 
 TERNARY_TABLE = {
@@ -2286,9 +2274,9 @@ EXPR_TABLE = {
 
 
 def eval_expr(node, env: Environment):
-    env.get_global().expr_count += 1
+    # env.get_global().expr_count += 1
     rtn = EXPR_TABLE[node.node_type](node, env)
-    env.get_global().expr_count -= 1
+    # env.get_global().expr_count -= 1
     return rtn
 
 

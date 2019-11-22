@@ -78,6 +78,7 @@ class Environment:
         count += 1
 
         self.outer: Environment = outer
+        self.operands = set()
 
     def __str__(self):
         temp = ["Consts: "]
@@ -101,11 +102,16 @@ class Environment:
     def __eq__(self, other):
         return isinstance(other, Environment) and self.env_id == other.env_id
 
-    # def add_gc_exclusion(self, obj):
-    #     self.outer.add_gc_exclusion(obj)
-    #
-    # def remove_gc_exclusion(self, obj):
-    #     self.outer.remove_gc_exclusion(obj)
+    def add_operand(self, value):
+        if isinstance(value, lib.SplObject):
+            # print("a", value.id)
+            self.operands.add(mem.Pointer(value.id))
+
+    def remove_operand(self, value):
+        pass
+    #     if isinstance(value, lib.SplObject):
+    #         # print("r", value.id)
+    #         self.operands.discard(mem.Pointer(value.id))
 
     def invalidate(self):
         """
@@ -465,10 +471,10 @@ class GlobalEnvironment(MainAbstractEnvironment):
     def __init__(self):
         MainAbstractEnvironment.__init__(self, GLOBAL_SCOPE, None)
 
-        self.expr_count = 0
+        # self.expr_count = 0
 
-    def gc_able(self):
-        return self.expr_count == 0
+    # def gc_able(self):
+    #     return self.expr_count == 0
 
     def is_global(self):
         return True
