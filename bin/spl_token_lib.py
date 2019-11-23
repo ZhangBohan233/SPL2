@@ -20,7 +20,7 @@ ALL = [SYMBOLS, UNARY_OPERATORS, BINARY_OPERATORS, TERNARY_OPERATORS, OTHERS, MI
 #     .union(MIDDLE) \
 #     .union(UNARY_OPERATORS) \
 #     .union(TERNARY_OPERATORS)
-RESERVED = {"class", "fn", "if", "else", "new", "extends", "return", "break", "continue",
+RESERVED = {"class", "fn", "if", "else", "new", "del", "extends", "return", "break", "continue",
             "true", "false", "null", "operator", "while", "for", "import", "namespace", "throw", "try", "catch",
             "finally", "abstract", "const", "var", "assert", "as"}
 RESERVED_FOR_BRACE = {"return"}

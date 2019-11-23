@@ -321,7 +321,7 @@ class List extends Iterable {
     var length = 0;
 
     fn List(*args) {
-        arr = array(length=8);
+        arr = malloc(array(length=8));
         for var x; args {
             append(x);
         }
@@ -425,7 +425,7 @@ class List extends Iterable {
     }
 
     fn to_array() {
-        var s_arr = array(length=length);
+        var s_arr = malloc(array(length=length));
         for var i = 0; i < length; i++ {
             s_arr[i] = arr[i];
         }
@@ -455,9 +455,9 @@ class List extends Iterable {
  */
 fn input(prompt=null) {
     if prompt === null {
-        return new String(natives.input());
+        return string(natives.input());
     } else {
-        return new String(natives.input(prompt));
+        return string(natives.input(prompt));
     }
 }
 
@@ -465,14 +465,14 @@ fn input(prompt=null) {
  * Returns a new <List> instance, with initial elements *args
  */
 fn list(*args) {
-    return new List(*args);
+    return malloc(new List(*args));
 }
 
 /*
  * Returns a new <String> instance, with literal `lit`
  */
 fn string(lit) {
-    return new String(lit);
+    return malloc(new String(lit));
 }
 
 /*

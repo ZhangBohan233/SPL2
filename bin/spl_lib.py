@@ -111,13 +111,17 @@ class SplObject:
     """
     id: int
 
-    def __init__(self):
-        self.id = mem.MEMORY.allocate(self)
+    def __init__(self, memory_length=1):
+        self.id = mem.MEMORY.allocate(self, memory_length)
+        self.m_len = memory_length
+
+    def memory_length(self):
+        return self.m_len
 
 
 class NativeType(SplObject):
-    def __init__(self):
-        SplObject.__init__(self)
+    def __init__(self, memory_length=1):
+        SplObject.__init__(self, memory_length)
 
     @classmethod
     def type_name__(cls) -> str:
@@ -281,7 +285,7 @@ class System(NativeType, mem.EnvironmentCarrier):
         stdin: system standard input stream, ClassInstance extends InputStream
     """
 
-    argv = None  # Array
+    # argv = None  # Array
     cwd: CharArray
     encoding: str
     native_in = None
@@ -291,14 +295,14 @@ class System(NativeType, mem.EnvironmentCarrier):
     stderr = None  # ClassInstance <NativeOutputStream>
     stdin = None  # ClassInstance <NativeInputStream>
 
-    def __init__(self, argv_, directory: CharArray, enc: str, in_out_err):
+    def __init__(self, directory: CharArray, enc: str, in_out_err):
         NativeType.__init__(self)
 
         self.native_in = PyInputStream(in_out_err[0])
         self.native_out = PyOutputStream(in_out_err[1])
         self.native_err = PyOutputStream(in_out_err[2])
         self.cwd = directory
-        self.argv = argv_
+        # self.argv = argv_
         self.encoding = enc
 
     def get_envs(self):

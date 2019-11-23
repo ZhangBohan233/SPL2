@@ -34,7 +34,7 @@ class TestObj extends Test {
     }
 }
 
-if main() {
+fn main(args) {
     const t0 = system.time();
 
     for var i = 0; i < 100_000; i++ {}

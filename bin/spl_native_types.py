@@ -2,49 +2,46 @@ import bin.environment as environment
 import bin.spl_lib as lib
 import bin.spl_memory as mem
 
-
 LINE_FILE = 0, "Interpreter"
 
 
-class Array(lib.NativeType, lib.Iterable, mem.EnvironmentCarrier):
+class Array(lib.NativeType, lib.Iterable):
     """
     A collector of sequential data with static size and dynamic type.
     """
+
     def __init__(self, *initial):
-        lib.NativeType.__init__(self)
+        lib.NativeType.__init__(self, len(initial) + 1)
 
         self.length = len(initial)
-        self.env = environment.NativeObjectEnvironment()
-        # self.list = [*initial]
-        for i in range(len(initial)):
-            self.env.define_var(str(i), initial[i], LINE_FILE)
+        for i in range(self.length):
+            self[i] = initial[i]
 
     def __iter__(self):
-        return (self.env.get(str(i), LINE_FILE) for i in range(self.length))
+        return (self.__getitem__(i) for i in range(self.length))
 
     def __str__(self):
         return str([lib.CharArray(lib.get_string_repr(v)) for v in self])
 
     def __repr__(self):
-        return self.__str__()
+        return "<Array of length {} at {}>".format(self.length, self.id)
 
-    def __getitem__(self, item):
-        return self.env.get(str(item), LINE_FILE)
-        # return self.list[item]
+    def __getitem__(self, index):
+        p = mem.MEMORY.access(self.id + index + 1)
+        if isinstance(p, mem.Pointer):
+            return mem.MEMORY.ref(p)
+        else:
+            return p
 
     def __setitem__(self, key, value):
-        self.env.assign(str(key), value, LINE_FILE)
-        # self.list[key] = value
-
-    def get_envs(self) -> list:
-        # print(self.env)
-        return [self.env]
+        if isinstance(value, lib.SplObject):
+            p = mem.MEMORY.point(value)
+        else:
+            p = value
+        mem.MEMORY.set(self.id + key + 1, p)
 
     def as_py_list(self):
-        return [self.env.get(str(i), LINE_FILE) for i in range(self.length)]
-
-    def get_pointers(self):
-        pass
+        return [self.__getitem__(i) for i in range(self.length)]
 
     @classmethod
     def type_name__(cls):
@@ -274,4 +271,3 @@ class File(lib.NativeType):
     @classmethod
     def type_name__(cls):
         return "File"
-

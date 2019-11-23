@@ -3,21 +3,21 @@ import bin.configs as cfg
 
 CONFIG_NAME = "mem_configs.cfg"
 DEFAULT_CAPACITY = 1048576
-DEFAULT_GC_THRESHOLD = 262144
+DEFAULT_STACK = 1024
 
 
 def read_gc_config() -> dict:
     import os
     if os.path.exists(CONFIG_NAME):
         d = cfg.read_cfg(CONFIG_NAME)
-        if "memory_size" not in d:
-            d["memory_size"] = DEFAULT_CAPACITY
-        if "gc_threshold" not in d:
-            d["gc_threshold"] = DEFAULT_GC_THRESHOLD
+        if "heap_size" not in d:
+            d["heap_size"] = DEFAULT_CAPACITY
+        if "stack_size" not in d:
+            d["stack_size"] = DEFAULT_STACK
         cfg.write_cfg(CONFIG_NAME, d)
         return d
     else:
-        d = {"memory_size": DEFAULT_CAPACITY, "gc_threshold": DEFAULT_GC_THRESHOLD}
+        d = {"heap_size": DEFAULT_CAPACITY, "stack_size": DEFAULT_STACK}
         cfg.write_cfg(CONFIG_NAME, d)
         return read_gc_config()
 
@@ -32,6 +32,12 @@ class Pointer:
     def __eq__(self, other):
         return isinstance(other, Pointer) and other.ptr == self.ptr
 
+    def __str__(self):
+        return "<Pointer to {}>".format(self.ptr)
+
+    def __repr__(self):
+        return self.__str__()
+
 
 class EnvironmentCarrier:
     def __init__(self):
@@ -39,6 +45,9 @@ class EnvironmentCarrier:
 
     def get_envs(self) -> list:
         raise NotImplementedError
+
+    def malloc_inner(self, self_loc: int):
+        pass
 
 
 class Memory:
@@ -49,101 +58,115 @@ class Memory:
 
     def __init__(self):
         configs = read_gc_config()
-        self.capacity = int(configs["memory_size"])
-        self.gc_threshold = int(configs["gc_threshold"])
+        self.stack_size = int(configs["stack_size"])
+        self.heap_size = int(configs["heap_size"])
 
-        self.memory = [None for _ in range(self.capacity)]
-        self.available = [i for i in range(self.capacity - 1, 0, -1)]
+        self.sp = 1
+        self.call_stack = []
 
-        self.gc_request = False
+        self.memory = [None for _ in range(self.heap_size + self.stack_size)]  # front: stack, back: heap
+        self.available = [i + self.stack_size for i in range(self.heap_size - 1, -1, -1)]
 
-    def allocate(self, obj) -> int:
+    def call(self):
+        self.call_stack.append(self.sp)
+
+    def exit_call(self):
+        self.sp = self.call_stack.pop()
+
+    def allocate(self, obj, length=1) -> int:
         """
         Stores the object to memory and returns the pointer.
         """
-        if len(self.available) <= 0:
-            raise lib.MemoryException("Memory Overflow")
-        loc = self.available.pop()
-        self.memory[loc] = obj
-        return loc
+        if self.sp >= self.stack_size:
+            raise lib.MemoryException("Stack Overflow")
+        if len(self.call_stack) == 0:
+            return self._heap_alloc(obj, length)
+        else:
+            loc = self.sp
+            self.memory[loc] = obj
+            self.sp += length
+            return loc
 
-    def point(self, obj, env) -> Pointer:
+    def point(self, obj) -> Pointer:
         """
         Returns the pointer points to the <SPLObject> object.
 
         :param obj:
-        :param env:
-        :return: he pointer points to the <SPLObject> object
+        :return: the pointer points to the <SPLObject> object
         """
-        # self.gc_gap += 1
-        self.check_gc(env)
-        return Pointer(obj.id)
+        ptr = Pointer(obj.id)
+        self._check_range(ptr)
+        return ptr
+
+    def set_ret(self, ptr_pri) -> Pointer:
+        sp = self.sp
+        self.sp += 1
+        self.memory[sp] = ptr_pri
+        return Pointer(sp)
 
     def ref(self, pointer: Pointer):
+        self._check_range(pointer)
         return self.memory[pointer.ptr]
 
+    def access(self, loc):
+        return self.memory[loc]
+
+    def set(self, loc, value):
+        self.memory[loc] = value
+
+    def malloc(self, obj, length=1) -> int:
+        return self._heap_alloc(obj, length, True)
+
     def free(self, obj):
-        self.available.append(obj.id)
+        length = obj.memory_length()
+        for i in range(length):
+            self.available.append(obj.id + length - i - 1)
 
-    def check_gc(self, env):
-        if self.space_available() < self.gc_threshold:
-            self.gc(env)
-            # self.gc_request = True
-            # self.gc_by_env(env)
-            # self.gc_gap = 0
+    def _heap_alloc(self, obj, length, replace=False):
+        if len(self.available) <= 0:
+            raise lib.MemoryException("Memory Overflow")
+        ind = self._find_available(length)
+        loc = self.available[ind]
+        self.available[ind - length + 1: ind + 1] = []
+        if replace:
+            self.memory[obj.id] = None
+        self.memory[loc] = obj
+        obj.id = loc
+        return loc
 
-    def request_gc(self):
-        self.gc_request = True
+    def _check_range(self, pointer: Pointer):
+        if self.sp <= pointer.ptr < self.stack_size:
+            raise lib.MemoryException("Unreachable stack address {}".format(pointer.ptr))
 
-    def gc(self, env):
-        self.gc_request = False
-        s = self.space_available()
-        pointed = {0}
-        excluded = set()
-        self.mark_pointed(env, pointed, excluded)  # Check from innermost
-        self.available = []
-        for i in range(self.capacity - 1, 0, -1):
-            if i not in pointed:
-                self.available.append(i)
-                # self.memory[i] = None
+    def _find_available(self, length) -> int:
+        """
+        Finds a consecutive heap address of length <length> and returns the first address.
 
-        t = self.space_available()
-        print("gc! from {} to {}".format(s, t))
+        :param length:
+        :return:
+        """
+        i = len(self.available) - 1
+        while i >= 0:
+            j = 0
+            while j < length - 1 and i - j > 0:
+                if self.available[i - j - 1] != self.available[i - j] + 1:
+                    break
+                j += 1
+            if j == length - 1:
+                return i
+            else:
+                i -= j + 1
+        raise lib.MemoryException("No space to malloc an object of length {}".format(length))
 
     def space_used(self):
-        return self.capacity - len(self.available)
+        return self.heap_size - len(self.available)
 
     def space_available(self):
         return len(self.available)
 
-    def mark_operands(self, env, pointed: set, scanned: set):
-        for op in env.operands:
-            if isinstance(op, Pointer):
-                pointed.add(op.ptr)
-                obj = self.memory[op.ptr]
-                if isinstance(obj, EnvironmentCarrier):
-                    # print(obj)
-                    for stored in obj.get_envs():
-                        self.mark_pointed(stored, pointed, scanned)
-
-    def mark_pointed(self, env, pointed: set, scanned: set):
-        if env is not None and env not in scanned:
-            scanned.add(env)
-            self.mark_operands(env, pointed, scanned)
-            self.mark_pointed(env.outer, pointed, scanned)
-            attrs_ptr = env.attributes_ptr()
-            for name in attrs_ptr:
-                ptr = attrs_ptr[name]
-                if isinstance(ptr, Pointer):
-                    pointed.add(ptr.ptr)
-                    obj = self.memory[ptr.ptr]
-                    if isinstance(obj, EnvironmentCarrier):
-                        # print(obj)
-                        for stored in obj.get_envs():
-                            self.mark_pointed(stored, pointed, scanned)
-
     def __str__(self):
-        return str(self.memory)
+        return str(self.memory[:self.stack_size]) + "\n" + str(self.memory[self.stack_size:])
 
 
 MEMORY = Memory()
+NULL = Pointer(0)

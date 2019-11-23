@@ -54,17 +54,16 @@ class Interpreter:
         """
         add_natives(self.env)
         # obj = lib.SplObject()
-        system = lib.System(typ.Array(*parse_args(self.argv)), lib.CharArray(self.dir),
-                            self.encoding, self.in_out_err)
+        system = lib.System(lib.CharArray(self.dir), self.encoding, self.in_out_err)
         natives = NativeInvokes()
         # native_graphics = gra.NativeGraphics()
         os_ = Os()
         memory_ = MemoryManager()
 
-        self.env.define_const("system", system, LINE_FILE)
-        self.env.define_const("os", os_, LINE_FILE)
-        self.env.define_const("natives", natives, LINE_FILE)
-        self.env.define_const("memory", memory_, LINE_FILE)
+        add_native(self.env, "system", system)
+        add_native(self.env, "os", os_)
+        add_native(self.env, "natives", natives)
+        add_native(self.env, "memory", memory_)
 
     def set_ast(self, ast_: ast.BlockStmt):
         """
@@ -90,7 +89,10 @@ class Interpreter:
         :return: the exit value
         """
         try:
-            return evaluate(self.ast, self.env)
+            evaluate(self.ast, self.env)
+            if "main" in self.env.variables:
+                return call_function(parse_args(self.argv), LINE_FILE, self.env.get("main", LINE_FILE), self.env,
+                                     exit_call=False)
         except Exception as e:
             return self.handler(e)
 
@@ -104,6 +106,10 @@ def parse_args(argv):
     return [lib.CharArray(x) for x in argv]
 
 
+def add_native(env: Environment, name: str, obj: lib.SplObject):
+    env.define_const(name, obj, LINE_FILE)
+
+
 def add_natives(env: Environment):
     """
     Adds a bundle of global variables to the global scope.
@@ -113,56 +119,69 @@ def add_natives(env: Environment):
     :param env: the Environment
     :return: None
     """
-    env.define_const("print", NativeFunction(print_, "print", True), LINE_FILE)
-    env.define_const("println", NativeFunction(print_ln, "println", True), LINE_FILE)
-    env.define_const("type", NativeFunction(typeof, "type"), LINE_FILE)
-    env.define_const("pair", NativeFunction(make_pair, "pair"), LINE_FILE)
-    env.define_const("array", NativeFunction(make_array, "array"), LINE_FILE)
-    env.define_const("set", NativeFunction(make_set, "set"), LINE_FILE)
-    env.define_const("int", NativeFunction(lib.to_int, "int"), LINE_FILE)
-    env.define_const("float", NativeFunction(lib.to_float, "float"), LINE_FILE)
-    env.define_const("chars", NativeFunction(to_chars, "chars"), LINE_FILE)
-    env.define_const("repr", NativeFunction(to_repr, "repr"), LINE_FILE)
+    add_native(env, "print", NativeFunction(print_, "print", True))
+    add_native(env, "println", NativeFunction(print_ln, "println", True))
+    add_native(env, "type", NativeFunction(typeof, "type"))
+    add_native(env, "pair", NativeFunction(make_pair, "pair"))
+    add_native(env, "array", NativeFunction(make_array, "array"))
+    add_native(env, "set", NativeFunction(make_set, "set"))
+    add_native(env, "int", NativeFunction(lib.to_int, "int"))
+    add_native(env, "float", NativeFunction(lib.to_float, "float"))
+    add_native(env, "chars", NativeFunction(to_chars, "chars"))
+    add_native(env, "repr", NativeFunction(to_repr, "repr"))
     # env.define_const("input", NativeFunction(input_, "input", True), LINE_FILE)
     # env.define_const("f_open", NativeFunction(f_open, "f_open", True), LINE_FILE)
-    env.define_const("eval", NativeFunction(eval_, "eval", True), LINE_FILE)
-    env.define_const("dir", NativeFunction(dir_, "dir", True), LINE_FILE)
-    env.define_const("get_env", NativeFunction(get_env, "get_env", True), LINE_FILE)
+    add_native(env, "eval", NativeFunction(eval_, "eval", True))
+    add_native(env, "dir", NativeFunction(dir_, "dir", True))
+    add_native(env, "get_env", NativeFunction(get_env, "get_env", True))
     # env.define_const("get_cwf", NativeFunction(get_cwf, "get_cwf"), LINE_FILE)
-    env.define_const("main", NativeFunction(is_main, "main", True), LINE_FILE)
+    # env.define_const("main", NativeFunction(is_main, "main", True), LINE_FILE)
     # env.define_const("exit", NativeFunction(lib.exit_, "exit"), LINE_FILE)
-    env.define_const("help", NativeFunction(help_, "help", True), LINE_FILE)
+    add_native(env, "help", NativeFunction(help_, "help", True))
     # env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
-    env.define_const("id", NativeFunction(id_, "id"), LINE_FILE)
-    env.define_const("free", NativeFunction(free, "free"), LINE_FILE)
+    add_native(env, "id", NativeFunction(id_, "id"))
+    add_native(env, "malloc", NativeFunction(malloc, "malloc"))
+    add_native(env, "free", NativeFunction(free, "free"))
     # env.define_const("memory_view", NativeFunction(memory_view, "memory_view", True), LINE_FILE)
     # env.define_const("memory_status", NativeFunction(memory_status, "memory_status", True), LINE_FILE)
     # env.define_const("gc", NativeFunction(gc, "gc", True), LINE_FILE)
 
-    env.define_const("Object", OBJECT, LINE_FILE)
-    env.define_const("CharArray", lib.CharArray, LINE_FILE)
-    env.define_const("Array", typ.Array, LINE_FILE)
-    env.define_const("Pair", typ.Pair, LINE_FILE)
-    env.define_const("Set", typ.Set, LINE_FILE)
-    env.define_const("File", typ.File, LINE_FILE)
-    env.define_const("Thread", Thread, LINE_FILE)
-    env.define_const("System", lib.System, LINE_FILE)
-    env.define_const("Os", Os, LINE_FILE)
-    env.define_const("Natives", NativeInvokes, LINE_FILE)
-    env.define_const("Memory", MemoryManager, LINE_FILE)
-    env.define_const("Function", Function, LINE_FILE)
-    env.define_const("Graphic", gra.Graphic, LINE_FILE)
-    env.define_const("EnvWrapper", EnvWrapper, LINE_FILE)
-    env.define_const("Class", Class, LINE_FILE)
-    env.define_const("Module", Module, LINE_FILE)
-    env.define_const("Annotation", Annotation, LINE_FILE)
+    add_native(env, "Object", OBJECT)
+    add_native(env, "CharArray", TypeObj(lib.CharArray))
+    add_native(env, "Array", TypeObj(typ.Array))
+    add_native(env, "Pair", TypeObj(typ.Pair))
+    add_native(env, "Set", TypeObj(typ.Set))
+    add_native(env, "File", TypeObj(typ.File))
+    add_native(env, "Thread", TypeObj(Thread))
+    add_native(env, "System", TypeObj(lib.System))
+    add_native(env, "Os", TypeObj(Os))
+    add_native(env, "Natives", TypeObj(NativeInvokes))
+    add_native(env, "Memory", TypeObj(MemoryManager))
+    add_native(env, "Function", TypeObj(Function))
+    add_native(env, "Graphic", TypeObj(gra.Graphic))
+    add_native(env, "EnvWrapper", TypeObj(EnvWrapper))
+    add_native(env, "Class", TypeObj(Class))
+    add_native(env, "Module", TypeObj(Module))
+    add_native(env, "Annotation", TypeObj(Annotation))
 
 
-class NativeFunction:
+class TypeObj(lib.SplObject):
+    def __init__(self, type_: type):
+        lib.SplObject.__init__(self)
+
+        self.type = type_
+
+
+class NativeFunction(lib.NativeType):
     def __init__(self, func: callable, name: str, need_env=False):
+        lib.NativeType.__init__(self)
         self.name = name
         self.function: callable = func
         self.need_env = need_env
+
+    @classmethod
+    def type_name__(cls) -> str:
+        return "NativeFunction"
 
     def __str__(self):
         try:
@@ -472,6 +491,10 @@ class NativeInvokes(lib.NativeType):
         line = call_function([], LINE_FILE, readline, env)
         return lib.CharArray(line)
 
+    @staticmethod
+    def print(s):
+        print(s)
+
 
 class Os(lib.NativeType):
     """
@@ -581,10 +604,17 @@ class MemoryManager(lib.NativeType):
         return "Memory"
 
     @staticmethod
-    def gc(env: Environment):
-        mem.MEMORY.gc(env)
-        # mem.MEMORY.gc_by_env(env)
-        # mem.MEMORY.request_gc()
+    def sp(env: Environment):
+        try:
+            print_ln(env, str(mem.MEMORY.sp))
+        except AttributeError:
+            print(str(mem.MEMORY.sp))
+
+    # @staticmethod
+    # def gc(env: Environment):
+    #     mem.MEMORY.gc(env)
+    #     # mem.MEMORY.gc_by_env(env)
+    #     # mem.MEMORY.request_gc()
 
     @staticmethod
     def view(env: Environment):
@@ -614,7 +644,7 @@ class MemoryManager(lib.NativeType):
 
 
 class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
-    def __init__(self, env: Environment, class_name: str, clazz):
+    def __init__(self, env: ClassEnvironment, class_name: str, clazz):
         """
         ===== Attributes =====
         :param class_name: name of this class
@@ -629,8 +659,24 @@ class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
         # self.env.define_const("this", self, LINE_FILE)
 
     def get_envs(self):
-        # print(6666666666666666666)
         return [self.env]
+
+    # def memory_length(self):
+    #     return self.env.occupied_length() + 1
+
+    def malloc_inner(self, self_loc: int):
+        attrs = self.env.attributes_ptr()
+        i = 1
+        for k in attrs:
+            ptr = attrs[k]
+            if isinstance(ptr, mem.Pointer):
+                obj = mem.MEMORY.ref(ptr)
+                malloc(obj)
+                if k in self.env.constants:
+                    self.env.constants[k] = mem.MEMORY.point(obj)
+                else:
+                    self.env.variables[k] = mem.MEMORY.point(obj)
+            i += 1
 
     def __getitem__(self, item):
         if self.env.contains_key("__getitem__"):
@@ -730,7 +776,7 @@ class SPLBaseException(Exception):
 
 # Native functions with dependencies
 
-def to_chars(v) -> lib.CharArray:
+def to_chars(v="") -> lib.CharArray:
     if isinstance(v, ClassInstance):
         return lib.CharArray(str(v))
     else:
@@ -742,6 +788,19 @@ def to_repr(v) -> lib.CharArray:
         return lib.CharArray(repr(v))
     else:
         return lib.CharArray(v)
+
+
+def malloc(v, length=None):
+    if isinstance(v, lib.SplObject):
+        if length is None:
+            loc = mem.MEMORY.malloc(v, v.memory_length())
+        else:
+            loc = mem.MEMORY.malloc(v, length)
+        if isinstance(v, mem.EnvironmentCarrier):
+            v.malloc_inner(loc)
+        return v
+    else:
+        raise lib.MemoryException("Cannot malloc a '{}' object".format(typeof(v)))
 
 
 def free(v):
@@ -1207,20 +1266,20 @@ def is_subclass_of(child_class: Class, target_class: Class) -> bool:
 
 def eval_operator(node: ast.BinaryOperator, env: Environment):
     left = evaluate(node.left, env)
-    env.add_operand(left)
+    # env.add_operand(left)
     if node.assignment:
         right = evaluate(node.right, env)
-        env.add_operand(right)
+        # env.add_operand(right)
         symbol = node.operation[:-1]
         res = arithmetic(left, right, symbol, env)
         rtn = assignment(node.left, res, env, ast.ASSIGN)
-        env.remove_operand(right)
+        # env.remove_operand(right)
     else:
         symbol = node.operation
         right_node = node.right
         rtn = arithmetic(left, right_node, symbol, env)
 
-    env.remove_operand(left)
+    # env.remove_operand(left)
     return rtn
 
 
@@ -1486,7 +1545,7 @@ def proceed_kw_unpack(args_pair, kwargs: dict, lf, call_env):
                                 .format(typeof(args_pair), lf[1], lf[0]))
 
 
-def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
+def call_function(args: list, lf: tuple, func: Function, call_env: Environment, exit_call=True):
     """
     Calls a function
 
@@ -1494,6 +1553,7 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
     :param lf: line and file of the caller
     :param func: the function object itself
     :param call_env: the environment where the function call was made
+    :param exit_call: destroy the call stack after exit
     :return: the function result
     """
     if not isinstance(func, Function):
@@ -1539,7 +1599,10 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment):
         raise lib.ArgumentException("Too many arguments for function at <{}>, in file '{}', at line {}"
                                     .format(func.id, lf[1], lf[0]))
 
+    mem.MEMORY.call()
     rtn = evaluate(func.body, scope)
+    if exit_call:
+        mem.MEMORY.exit_call()
     return rtn
 
 
@@ -1568,7 +1631,7 @@ def call_kw_unpack(name: str, kwargs: dict, scope: Environment, call_env: Enviro
 
 def eval_dot(node: ast.Dot, env: Environment):
     instance = evaluate(node.left, env)
-    env.add_operand(instance)
+    # env.add_operand(instance)
     obj = node.right
     t = obj.node_type
     lf = node.line_num, node.file
@@ -1601,7 +1664,7 @@ def eval_dot(node: ast.Dot, env: Environment):
     else:
         raise lib.InterpretException("Unknown Syntax, in file '{}', at line {}".format(node.file, node.line_num))
 
-    env.remove_operand(instance)
+    # env.remove_operand(instance)
     return rtn
 
 
@@ -1634,14 +1697,14 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             raise lib.InterpretException("Operator '||' '&&' do not support type.")
     else:
         right = evaluate(right_node, env)
-        env.add_operand(right)
+        # env.add_operand(right)
         # env.add_gc_exclusion(right)
         if left is None or isinstance(left, bool):
             rtn = primitive_arithmetic(left, right, symbol)
         elif isinstance(left, int) or isinstance(left, float):
             rtn = num_arithmetic(left, right, symbol)
         elif isinstance(left, lib.CharArray):
-            rtn = string_arithmetic(left, right, symbol)
+            rtn = char_array_arithmetic(left, right, symbol)
         elif isinstance(left, lib.NativeType):  # NativeTypes other than String
             rtn = native_arithmetic(left, right, symbol)
         elif isinstance(left, ClassInstance):
@@ -1652,7 +1715,7 @@ def arithmetic(left, right_node: ast.Node, symbol, env: Environment):
             rtn = raw_type_comparison(left, right, symbol)
 
         # env.remove_gc_exclusion(right)
-        env.remove_operand(right)
+        # env.remove_operand(right)
         return rtn
 
 
@@ -1700,10 +1763,8 @@ def native_arithmetic(left: lib.NativeType, right, symbol: str):
     elif symbol == "!==":
         return not isinstance(right, lib.NativeType) or id_(left) != id_(right)
     elif symbol == "instanceof":
-        if isinstance(right, NativeFunction):
-            return left.type_name__() == right.name
-        elif inspect.isclass(right):
-            return left.type_name__() == right.type_name__()
+        if isinstance(right, TypeObj):
+            return left.type_name__() == right.type.type_name__()
         else:
             return False
     elif symbol == "==":
@@ -1716,22 +1777,22 @@ def native_arithmetic(left: lib.NativeType, right, symbol: str):
                                                                                       typeof(right)))
 
 
-STRING_ARITHMETIC_TABLE = {
+CHAR_ARRAY_ARITHMETIC_TABLE = {
     "==": lambda left, right: left == right,
     "!=": lambda left, right: left != right,
     "+": lambda left, right: left + right,
     "===": lambda left, right: left is right,
     "is": lambda left, right: left is right,
     "!==": lambda left, right: left is not right,
-    "instanceof": lambda left, right: inspect.isclass(right) and right.type_name__() == "String"
+    "instanceof": lambda left, right: isinstance(right, TypeObj) and right.type.__name__ == "CharArray"
 }
 
 
-def string_arithmetic(left, right, symbol):
-    if symbol in STRING_ARITHMETIC_TABLE:
-        return STRING_ARITHMETIC_TABLE[symbol](left, right)
+def char_array_arithmetic(left, right, symbol):
+    if symbol in CHAR_ARRAY_ARITHMETIC_TABLE:
+        return CHAR_ARRAY_ARITHMETIC_TABLE[symbol](left, right)
     else:
-        raise lib.TypeException("String literal '{}' and '{}' does not support operation '{}'"
+        raise lib.TypeException("CharArray literal '{}' and '{}' does not support operation '{}'"
                                 .format(left, right, symbol))
 
 
@@ -2330,16 +2391,6 @@ def evaluate(node: ast.Node, env: Environment):
     else:
         return node
 
-
-# Processes before run
-
-#
-# def string_run(self: lib.CharArray, env):
-#     result = _run_spl_script(env, self)
-#     return result
-#
-#
-# lib.CharArray.__run__ = string_run
 
 OBJECT_DOC = """
 The superclass of all spl object.

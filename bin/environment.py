@@ -78,7 +78,6 @@ class Environment:
         count += 1
 
         self.outer: Environment = outer
-        self.operands = set()
 
     def __str__(self):
         temp = ["Consts: "]
@@ -101,17 +100,6 @@ class Environment:
 
     def __eq__(self, other):
         return isinstance(other, Environment) and self.env_id == other.env_id
-
-    def add_operand(self, value):
-        if isinstance(value, lib.SplObject):
-            # print("a", value.id)
-            self.operands.add(mem.Pointer(value.id))
-
-    def remove_operand(self, value):
-        pass
-    #     if isinstance(value, lib.SplObject):
-    #         # print("r", value.id)
-    #         self.operands.discard(mem.Pointer(value.id))
 
     def invalidate(self):
         """
@@ -222,7 +210,7 @@ class Environment:
                 key[0].islower() and self._local_contains(key):
             lib.compile_time_warning("Warning: re-declaring method '{}' in '{}', at line {}".format(key, lf[1], lf[0]))
         # self.variables[key] = value
-        self.variables[key] = mem.MEMORY.point(value, self)  # must be reference type
+        self.variables[key] = mem.MEMORY.point(value)  # must be reference type
 
     def define_var(self, key, value, lf):
         if self._local_contains(key):
@@ -230,7 +218,7 @@ class Environment:
                                     .format(key, lf[1], lf[0]))
         else:
             if isinstance(value, lib.SplObject):
-                self.variables[key] = mem.MEMORY.point(value, self)  # reference type
+                self.variables[key] = mem.MEMORY.point(value)  # reference type
             else:
                 self.variables[key] = value  # primitive type
 
@@ -240,13 +228,13 @@ class Environment:
                                     .format(key, lf[1], lf[0]))
         else:
             if isinstance(value, lib.SplObject):
-                self.constants[key] = mem.MEMORY.point(value, self)  # reference type
+                self.constants[key] = mem.MEMORY.point(value)  # reference type
             else:
                 self.constants[key] = value  # primitive type
 
     def assign(self, key, value, lf):
         if isinstance(value, lib.SplObject):
-            ptr = mem.MEMORY.point(value, self)
+            ptr = mem.MEMORY.point(value)
             self.assign_ptr(key, ptr, lf)
         else:
             self.assign_ptr(key, value, lf)
@@ -471,11 +459,6 @@ class GlobalEnvironment(MainAbstractEnvironment):
     def __init__(self):
         MainAbstractEnvironment.__init__(self, GLOBAL_SCOPE, None)
 
-        # self.expr_count = 0
-
-    # def gc_able(self):
-    #     return self.expr_count == 0
-
     def is_global(self):
         return True
 
@@ -497,6 +480,9 @@ class ClassEnvironment(MainAbstractEnvironment):
     def is_class(self):
         return True
 
+    def occupied_length(self):
+        return len(self.variables) + len(self.constants)
+
 
 class NativeObjectEnvironment(MainAbstractEnvironment):
 
@@ -515,15 +501,26 @@ class FunctionEnvironment(MainAbstractEnvironment):
         MainAbstractEnvironment.__init__(self, FUNCTION_SCOPE, outer)
 
         self.terminated = False
-        self.exit_value = None
+        self.ret: mem.Pointer = mem.NULL
 
     def terminate(self, exit_value):
         self.terminated = True
         # self.exit_value = exit_value
-        self.define_var("return value", exit_value, (0, "Environment"))
+        # self.define_var("return value", exit_value, (0, "Environment"))
+        self.ret = mem.MEMORY.sp
+        if isinstance(exit_value, lib.SplObject):
+            p = mem.MEMORY.point(exit_value)
+        else:
+            p = exit_value
+        self.ret = mem.MEMORY.set_ret(p)
 
     def terminate_value(self):
-        return self.get("return value", (0, "Environment"))
+        p = mem.MEMORY.ref(self.ret)
+        if isinstance(p, mem.Pointer):
+            return mem.MEMORY.ref(p)
+        else:
+            return p
+        # return self.get("return value", (0, "Environment"))
         # return self.exit_value
 
     def is_terminated(self):

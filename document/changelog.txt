@@ -1,3 +1,19 @@
+********** SPL 2.0 Alpha 11 **********
+===== Build 0105 2019/11/22 =====
+
+##### Big Changes #####
+
+* Program now starts run in 'main(args)', not globally
+* Removed Garbage Collector
+* Manual Memory Management:
+    * Stack allocated memory for use in function calls, destroyed when returned
+    * malloc() to move object in stack memory to heap memory
+    * free() to remove from heap
+* Array now stores variable pointers flatly in memory
+* Wrapper 'TypeObj' for native classes
+* natives.print() for use when no stream available
+* Still bugs
+
 ********** SPL 2.0 Alpha 10 **********
 ===== Build 0104 2019/11/03 =====
 
