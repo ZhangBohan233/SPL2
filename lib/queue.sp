@@ -82,15 +82,27 @@ class LinkedList extends Deque, Iterable {
     fn LinkedList() {
     }
 
+    fn __free__() {
+        node := head;
+        while node !== null {
+            next := node.after;
+            free(node.value);
+            free(node);
+            node = next;
+        }
+    }
+
     @Override
     fn __iter__() {
-        return new LinkedListIterator(head);
+        return malloc(new LinkedListIterator(head));
     }
 
     fn __str__() {
-        var s = "Link[";
+        var s = malloc("Link[");
         for var cur = head; cur; cur = cur.after {
-            s += string(cur.value) + "->";
+            ch := chars(cur.value);
+            s += ch + "->";
+            free(ch);
         }
         s += "]";
         return s;
@@ -106,7 +118,7 @@ class LinkedList extends Deque, Iterable {
         if size_ == 0 {
             create(element);
         } else {
-            var n = new LLNode;
+            var n = malloc(new LLNode);
             n.value = element;
             n.before = tail;
             tail.after = n;
@@ -121,7 +133,7 @@ class LinkedList extends Deque, Iterable {
         if size_ == 0 {
             create(element);
         } else {
-            var n = new LLNode;
+            var n = malloc(new LLNode);
             n.value = element;
             n.after = head;
             head.before = n;
@@ -179,7 +191,7 @@ class LinkedList extends Deque, Iterable {
     }
 
     fn create(ele) {
-        var n = new LLNode;
+        var n = malloc(new LLNode);
         n.value = ele;
         head = n;
         tail = n;

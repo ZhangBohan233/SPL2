@@ -1,0 +1,101 @@
+fn contains(lit, pattern) {
+    p_len := pattern.length();
+    len := lit.length();
+    for i := 0; i < len - p_len; i++ {
+        var j;
+        for j = 0; j < p_len; j++ {
+            if __getitem__(i + j) != pattern[j] {
+                break;
+            }
+        }
+        if j == p_len {
+            return true;
+        }
+    }
+    return false;
+    }
+
+fn format(lit, *args) {
+    arg_len := args.size();
+    len := lit.length();
+    lst := [];
+    i := 0;
+    count := 0;
+    while i < len {
+        ch := lit[i];
+        if ch == "%" {
+            j := i + 1;
+            params := [];
+            while !lit[j].is_alpha() {
+                params.append(lit[j]);
+                j++;
+            }
+            if count >= arg_len {
+                throw new IndexException("Not enough arguments for string format");
+            }
+            flag := lit[j];
+            if flag == "s" {
+                literal := args[count];
+                lst.append(literal)
+            } else if flag == "d" {
+                lst.append(chars(int(args[count])));
+            } else if flag == "f" {
+                if params.size() > 0 {
+                    precision := int(params[0]);
+                    lst.append(chars(round(args[count], precision)));
+                } else {
+                    lst.append(chars(args[count]));
+                }
+            } else if flag == "r" {
+                literal := args[count];
+                lst.append(chars(literal));
+            } else {
+                lst.append("%");
+                i = j;
+                continue;
+            }
+            i = j + 1;
+            count++;
+            continue;
+        }
+        lst.append(ch);
+        i++;
+    }
+    return "".join(lst);
+}
+
+fn is_alpha(lit) {
+    return lit.is_alpha();
+}
+
+fn is_number(lit) {
+    try {
+        lit.__float__();
+        return true;
+    } catch e : Exception {
+        return false;
+    }
+}
+
+fn join(lit, iter) {
+    lst := [];
+    for var seg; iter {
+        lst.append(seg.lit);
+    }
+    return chars(natives.str_join("".lit, lst.to_array()));
+}
+
+fn split(lit.pattern) {
+    lst := [];
+    j := 0;
+    len := lit.length();
+    for i := 0; i < len; i++ {
+        if lit[i] == pattern {
+            seg := lit.substring(j, i);
+            lst.append(seg);
+            j = i + 1;
+        }
+    }
+    lst.append(lit.substring(j, len));
+    return lst;
+}

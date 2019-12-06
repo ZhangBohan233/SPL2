@@ -23,7 +23,7 @@ class Graphic(lib.NativeType):
             self.tk = true_func(parent.tk)
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "Graphic"
 
     def set_bg(self, color):

@@ -306,11 +306,11 @@ class Parser:
                     parser.add_number(line, value)
                 elif isinstance(token, stl.LiteralToken):
                     value = token.text
-                    func_name = "string"
-                    parser.add_name(line, func_name)
-                    parser.add_call(line)
+                    # func_name = "string"
+                    # parser.add_name(line, func_name)
+                    # parser.add_call(line)
                     parser.add_literal(line, value)
-                    parser.build_call()
+                    # parser.build_call()
                 elif isinstance(token, stl.DocToken):
                     pass
                 elif token.is_eof():

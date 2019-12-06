@@ -29,22 +29,25 @@ class Array(lib.NativeType, lib.Iterable):
     def __getitem__(self, index):
         p = mem.MEMORY.access(self.id + index + 1)
         if isinstance(p, mem.Pointer):
-            return mem.MEMORY.ref(p)
+            return mem.MEMORY.ref(p, LINE_FILE)
         else:
             return p
 
     def __setitem__(self, key, value):
         if isinstance(value, lib.SplObject):
-            p = mem.MEMORY.point(value)
+            p = mem.MEMORY.point(value, LINE_FILE)
         else:
             p = value
         mem.MEMORY.set(self.id + key + 1, p)
+
+    def memory_length(self):
+        return self.length + 1
 
     def as_py_list(self):
         return [self.__getitem__(i) for i in range(self.length)]
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Array"
 
     def contains(self, item):
@@ -112,7 +115,7 @@ class Pair(lib.NativeType, lib.Iterable, mem.EnvironmentCarrier):
         return self.ele_num
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Pair"
 
     def get_envs(self) -> list:
@@ -133,7 +136,7 @@ class Set(lib.NativeType, lib.Iterable, mem.EnvironmentCarrier):
         return (self.env.get(v, LINE_FILE) for v in self.env.attributes_ptr())
 
     def __str__(self):
-        return str(set([lib.CharArray(lib.get_string_repr(v)) for v in self]))
+        return "Set{" + str(set([lib.CharArray(lib.get_string_repr(v)) for v in self]))[4:-1] + "}"
 
     def __repr__(self):
         return self.__str__()
@@ -174,7 +177,7 @@ class Set(lib.NativeType, lib.Iterable, mem.EnvironmentCarrier):
         return item in self
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Set"
 
     def get_envs(self) -> list:
@@ -269,5 +272,5 @@ class File(lib.NativeType):
         self.fp.close()
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "File"

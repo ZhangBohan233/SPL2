@@ -124,7 +124,7 @@ class NativeType(SplObject):
         SplObject.__init__(self, memory_length)
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         raise NotImplementedError
 
     @classmethod
@@ -132,7 +132,7 @@ class NativeType(SplObject):
         """
         :return: the doc string of this type
         """
-        doc = ["NativeObject ", cls.type_name__(), " ", cls.__doc__, "\n"]
+        doc = ["NativeObject ", cls.__type_name__(), " ", cls.__doc__, "\n"]
         for x in dir(cls):
             if len(x) < 2 or x[-2:] != "__":
                 attr = getattr(cls, x)
@@ -184,7 +184,7 @@ class CharArray(NativeType, Iterable):
         return self.literal
 
     def __repr__(self):
-        return self.__str__()
+        return "'" + self.__str__() + "'"
 
     def __eq__(self, other):
         return isinstance(other, CharArray) and self.literal == other.literal
@@ -222,7 +222,7 @@ class CharArray(NativeType, Iterable):
         return len(self.literal)
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "CharArray"
 
     def substring(self, from_, to):
@@ -239,7 +239,7 @@ class PyInputStream(NativeType):
         self.stream = stream
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "PyInputStream"
 
     def read(self):
@@ -259,7 +259,7 @@ class PyOutputStream(NativeType):
         self.stream = stream
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "PyOutputStream"
 
     def write(self, obj):
@@ -343,7 +343,7 @@ class System(NativeType, mem.EnvironmentCarrier):
         time_lib.sleep(milli / 1000)
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "System"
 
 

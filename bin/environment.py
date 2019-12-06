@@ -9,6 +9,8 @@ SUB_SCOPE = 4
 MODULE_SCOPE = 5
 NATIVE_OBJECT_SCOPE = 6
 
+LINE_FILE = 0, "Environment"
+
 
 class Undefined:
     def __init__(self):
@@ -22,13 +24,13 @@ class Undefined:
 
 
 class Annotation(lib.NativeType):
-    def __init__(self, name: lib.CharArray, content=None):
+    def __init__(self, name: str, content=None):
         lib.NativeType.__init__(self)
         self.name = name
         self.params = content
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "Annotation"
 
     def __eq__(self, other):
@@ -50,8 +52,8 @@ class Annotation(lib.NativeType):
 NULLPTR = mem.Pointer(0)
 UNDEFINED = Undefined()
 
-SUPPRESS = Annotation(lib.CharArray("Suppress"))
-OVERRIDE = Annotation(lib.CharArray("Override"))
+SUPPRESS = Annotation("Suppress")
+OVERRIDE = Annotation("Override")
 
 count = 0
 
@@ -145,7 +147,7 @@ class Environment:
     def get_global_const(self, key):
         ptr = self.get_global_const_ptr(key)
         if isinstance(ptr, mem.Pointer):
-            return mem.MEMORY.ref(ptr)
+            return mem.MEMORY.ref(ptr, (0, "Environment"))
         else:
             return ptr
 
@@ -159,7 +161,7 @@ class Environment:
         else:
             return self.outer.get_global_const_ptr(key)
 
-    def terminate(self, exit_value):
+    def terminate(self, exit_value, lf):
         raise lib.SplException("Return outside function.")
 
     def is_terminated(self):
@@ -204,13 +206,13 @@ class Environment:
         """
         raise lib.SplException("Not inside loop.")
 
-    def define_function(self, key, value, lf, annotations):
-        if not annotations.contains(OVERRIDE) and \
-                not annotations.contains(SUPPRESS) and \
+    def define_function(self, key, value, lf, annotations: set):
+        if OVERRIDE not in annotations and \
+                SUPPRESS not in annotations and \
                 key[0].islower() and self._local_contains(key):
             lib.compile_time_warning("Warning: re-declaring method '{}' in '{}', at line {}".format(key, lf[1], lf[0]))
         # self.variables[key] = value
-        self.variables[key] = mem.MEMORY.point(value)  # must be reference type
+        self.variables[key] = mem.MEMORY.point(value, lf)  # must be reference type
 
     def define_var(self, key, value, lf):
         if self._local_contains(key):
@@ -218,7 +220,7 @@ class Environment:
                                     .format(key, lf[1], lf[0]))
         else:
             if isinstance(value, lib.SplObject):
-                self.variables[key] = mem.MEMORY.point(value)  # reference type
+                self.variables[key] = mem.MEMORY.point(value, lf)  # reference type
             else:
                 self.variables[key] = value  # primitive type
 
@@ -228,13 +230,13 @@ class Environment:
                                     .format(key, lf[1], lf[0]))
         else:
             if isinstance(value, lib.SplObject):
-                self.constants[key] = mem.MEMORY.point(value)  # reference type
+                self.constants[key] = mem.MEMORY.point(value, lf)  # reference type
             else:
                 self.constants[key] = value  # primitive type
 
     def assign(self, key, value, lf):
         if isinstance(value, lib.SplObject):
-            ptr = mem.MEMORY.point(value)
+            ptr = mem.MEMORY.point(value, lf)
             self.assign_ptr(key, ptr, lf)
         else:
             self.assign_ptr(key, value, lf)
@@ -258,7 +260,7 @@ class Environment:
     def assign_const_ptr(self, key, ptr, lf) -> bool:
         if key in self.constants:
             cur_ptr = self.constants[key]
-            if mem.MEMORY.ref(cur_ptr) is UNDEFINED:
+            if mem.MEMORY.ref(cur_ptr, lf) is UNDEFINED:
                 # self.constants[key] = value
                 self.constants[key] = ptr
                 return True
@@ -270,7 +272,7 @@ class Environment:
             while out:
                 if key in out.constants:
                     cur_ptr = self.constants[key]
-                    if mem.MEMORY.ref(cur_ptr) is UNDEFINED:
+                    if mem.MEMORY.ref(cur_ptr, lf) is UNDEFINED:
                         # out.constants[key] = value
                         out.constants[key] = ptr
                         return True
@@ -346,7 +348,7 @@ class Environment:
         """
         ptr = self.get_ptr(key, line_file)
         if isinstance(ptr, mem.Pointer):
-            return mem.MEMORY.ref(ptr)
+            return mem.MEMORY.ref(ptr, line_file)
         else:
             return ptr
 
@@ -360,7 +362,7 @@ class Environment:
 
     def get_class(self, class_name):
         ptr = self.get_class_ptr(class_name)
-        return mem.MEMORY.ref(ptr)
+        return mem.MEMORY.ref(ptr, LINE_FILE)
 
     def get_class_ptr(self, class_name):
         v = self._inner_get_ptr(class_name)
@@ -395,7 +397,7 @@ class Environment:
         for k in d:
             p = d[k]
             if isinstance(p, mem.Pointer):
-                pd[k] = mem.MEMORY.ref(p)
+                pd[k] = mem.MEMORY.ref(p, LINE_FILE)
             else:
                 pd[k] = p
         return pd
@@ -503,13 +505,13 @@ class FunctionEnvironment(MainAbstractEnvironment):
         self.terminated = False
         self.ret: mem.Pointer = mem.NULL
 
-    def terminate(self, exit_value):
+    def terminate(self, exit_value, lf):
         self.terminated = True
         # self.exit_value = exit_value
         # self.define_var("return value", exit_value, (0, "Environment"))
         self.ret = mem.MEMORY.sp
         if isinstance(exit_value, lib.SplObject):
-            p = mem.MEMORY.point(exit_value)
+            p = mem.MEMORY.point(exit_value, lf)
         else:
             p = exit_value
         self.ret = mem.MEMORY.set_ret(p)
@@ -537,9 +539,9 @@ class LoopEnvironment(SubAbstractEnvironment):
     def resume_loop(self):
         self.paused = False
 
-    def terminate(self, exit_value):
+    def terminate(self, exit_value, lf):
         self.broken = True
-        self.outer.terminate(exit_value)
+        self.outer.terminate(exit_value, lf)
 
     def terminate_value(self):
         return self.outer.terminate_value()
@@ -564,8 +566,8 @@ class SubEnvironment(SubAbstractEnvironment):
     def resume_loop(self):
         self.outer.resume_loop()
 
-    def terminate(self, exit_value):
-        self.outer.terminate(exit_value)
+    def terminate(self, exit_value, lf):
+        self.outer.terminate(exit_value, lf)
 
     def terminate_value(self):
         return self.outer.terminate_value()

@@ -87,15 +87,16 @@ class Memory:
             self.sp += length
             return loc
 
-    def point(self, obj) -> Pointer:
+    def point(self, obj, lf) -> Pointer:
         """
         Returns the pointer points to the <SPLObject> object.
 
         :param obj:
+        :param lf
         :return: the pointer points to the <SPLObject> object
         """
         ptr = Pointer(obj.id)
-        self._check_range(ptr)
+        self._check_in_stack(ptr, lf)
         return ptr
 
     def set_ret(self, ptr_pri) -> Pointer:
@@ -104,8 +105,8 @@ class Memory:
         self.memory[sp] = ptr_pri
         return Pointer(sp)
 
-    def ref(self, pointer: Pointer):
-        self._check_range(pointer)
+    def ref(self, pointer: Pointer, lf):
+        self._check_in_stack(pointer, lf)
         return self.memory[pointer.ptr]
 
     def access(self, loc):
@@ -120,11 +121,20 @@ class Memory:
     def free(self, obj):
         length = obj.memory_length()
         for i in range(length):
-            self.available.append(obj.id + length - i - 1)
+            loc = obj.id + length - i - 1
+            self._check_in_heap(loc, obj)
+            self.available.append(loc)
+            self.memory[loc] = None  # only for test
+
+    def _check_in_heap(self, i, obj):
+        if i < self.stack_size:
+            raise lib.MemoryException("Object {} at {} is not in heap".format(i, obj))
 
     def _heap_alloc(self, obj, length, replace=False):
         if len(self.available) <= 0:
             raise lib.MemoryException("Memory Overflow")
+        if hasattr(obj, "id") and obj.id >= self.stack_size:  # already allocated in heap
+            return obj.id
         ind = self._find_available(length)
         loc = self.available[ind]
         self.available[ind - length + 1: ind + 1] = []
@@ -134,9 +144,17 @@ class Memory:
         obj.id = loc
         return loc
 
-    def _check_range(self, pointer: Pointer):
-        if self.sp <= pointer.ptr < self.stack_size:
-            raise lib.MemoryException("Unreachable stack address {}".format(pointer.ptr))
+    def _check_in_stack(self, pointer: Pointer, lf):
+        if pointer.ptr < self.stack_size and len(self.call_stack) > 0:
+            # if pointer.ptr < self.call_stack[-1]:
+            #     raise lib.MemoryException("Unreachable stack address {}: calling from stack top to stack body. Top: "
+            #                               "{}, sp: {} .In "
+            #                               "file '{}', at line {}"
+            #                               .format(pointer.ptr, self.call_stack[-1], self.sp, lf[1], lf[0]))
+            if pointer.ptr >= self.sp:
+                raise lib.MemoryException("Unreachable stack address {}: pointer outside stack, In "
+                                          "file '{}', at line {}"
+                                          .format(pointer.ptr, lf[1], lf[0]))
 
     def _find_available(self, length) -> int:
         """

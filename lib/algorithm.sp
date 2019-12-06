@@ -45,7 +45,7 @@ fn mergeSort(lst) {
             var i1 = i;
             var i2 = mid;
             var ci = 0;
-            var cache = list();
+            var cache = [];
 
             while i1 < mid && i2 < end {
                 if lst[i1] < lst[i2] {

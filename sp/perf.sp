@@ -37,7 +37,7 @@ class TestObj extends Test {
 fn main(args) {
     const t0 = system.time();
 
-    for var i = 0; i < 100_000; i++ {}
+    for i := 0; i < 100_000; i++ {}
 
     const t1 = system.time();
     print("loop: ");
@@ -49,20 +49,27 @@ fn main(args) {
     print("fib: ");
     println(t2 - t1);
 
+    memory.status();
+
     const lst = algorithm.randList(500, -32768, 32767);
 
     const t3 = system.time();
     algorithm.mergeSort(lst);
     const t4 = system.time();
 
+    free(lst);
+
     print("sort: ");
     println(t4 - t3);
+
+    memory.status();
 
     var link_lst = new queue.LinkedList();
     for var i = 0; i < 1000; i++ {
         var obj = new TestObj(i);
         link_lst.add_last(obj);
     }
+    free(link_lst);
 
     const t5 = system.time();
     print("object: ");
@@ -72,9 +79,12 @@ fn main(args) {
     for i := 0; i < 1000; i++ {
         s += "a";
     }
+    free(s);
     const t6 = system.time();
     print("string: ");
     println(t6 - t5);
 
     memory.status();
+    memory.sp();
+    memory.view();
 }

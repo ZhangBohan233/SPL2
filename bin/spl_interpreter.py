@@ -5,7 +5,6 @@ import bin.graphic_lib as gra
 import script
 import multiprocessing
 import math
-import inspect
 import os
 import subprocess
 import traceback
@@ -141,7 +140,7 @@ def add_natives(env: Environment):
     # env.define_const("exec", NativeFunction(exec_, "exec", True), LINE_FILE)
     add_native(env, "id", NativeFunction(id_, "id"))
     add_native(env, "malloc", NativeFunction(malloc, "malloc"))
-    add_native(env, "free", NativeFunction(free, "free"))
+    add_native(env, "free", NativeFunction(free, "free", True))
     # env.define_const("memory_view", NativeFunction(memory_view, "memory_view", True), LINE_FILE)
     # env.define_const("memory_status", NativeFunction(memory_status, "memory_status", True), LINE_FILE)
     # env.define_const("gc", NativeFunction(gc, "gc", True), LINE_FILE)
@@ -180,7 +179,7 @@ class NativeFunction(lib.NativeType):
         self.need_env = need_env
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "NativeFunction"
 
     def __str__(self):
@@ -223,14 +222,14 @@ class Function(lib.NativeType, mem.EnvironmentCarrier):
     :type outer_scope: Environment
     """
 
-    def __init__(self, params, body, outer, abstract: bool, annotations, doc):
+    def __init__(self, params, body, outer, abstract: bool, annotations: set, doc: str):
         lib.NativeType.__init__(self)
         self.params: [ParameterPair] = params
         self.annotations = annotations
         self.body = body
         self.outer_scope = outer
         self.abstract = abstract
-        self.doc = lib.CharArray(doc)
+        self.doc = doc
         self.file = None
         self.line_num = None
         self.clazz = None
@@ -239,7 +238,7 @@ class Function(lib.NativeType, mem.EnvironmentCarrier):
         return [self.outer_scope]
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "Function"
 
     def __str__(self):
@@ -290,7 +289,7 @@ class EnvWrapper(lib.NativeType):
             self.attrs[lib.CharArray(key)] = attrs[key]
 
     @classmethod
-    def type_name__(cls) -> str:
+    def __type_name__(cls) -> str:
         return "EnvWrapper"
 
     def get(self, name):
@@ -312,7 +311,7 @@ class Thread(lib.NativeType):
         self.daemon = False
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Thread"
 
     def set_daemon(self, d):
@@ -345,7 +344,7 @@ class NativeInvokes(lib.NativeType):
         lib.NativeType.__init__(self)
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Natives"
 
     @staticmethod
@@ -511,7 +510,7 @@ class Os(lib.NativeType):
         lib.NativeType.__init__(self)
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Os"
 
     @staticmethod
@@ -600,7 +599,7 @@ class MemoryManager(lib.NativeType):
         lib.NativeType.__init__(self)
 
     @classmethod
-    def type_name__(cls):
+    def __type_name__(cls):
         return "Memory"
 
     @staticmethod
@@ -661,22 +660,30 @@ class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
     def get_envs(self):
         return [self.env]
 
-    # def memory_length(self):
-    #     return self.env.occupied_length() + 1
-
     def malloc_inner(self, self_loc: int):
         attrs = self.env.attributes_ptr()
-        i = 1
         for k in attrs:
             ptr = attrs[k]
             if isinstance(ptr, mem.Pointer):
-                obj = mem.MEMORY.ref(ptr)
+                obj = mem.MEMORY.ref(ptr, LINE_FILE)
                 malloc(obj)
                 if k in self.env.constants:
-                    self.env.constants[k] = mem.MEMORY.point(obj)
+                    self.env.constants[k] = mem.MEMORY.point(obj, LINE_FILE)
                 else:
-                    self.env.variables[k] = mem.MEMORY.point(obj)
-            i += 1
+                    self.env.variables[k] = mem.MEMORY.point(obj, LINE_FILE)
+
+    def free_inner(self):
+        """
+        Frees all functions defined in this instance, which is not able to be freed in __free__()
+        :return:
+        """
+        attrs = self.env.attributes_ptr()
+        for k in attrs:
+            ptr = attrs[k]
+            if isinstance(ptr, mem.Pointer):
+                obj = mem.MEMORY.ref(ptr, LINE_FILE)
+                if isinstance(obj, Function):
+                    free(self.env, obj)
 
     def __getitem__(self, item):
         if self.env.contains_key("__getitem__"):
@@ -707,9 +714,10 @@ class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
         if self.env.contains_key("__repr__"):
             func: Function = self.env.get("__repr__", LINE_FILE)
             result = call_function([], LINE_FILE, func, None)
-            if result.class_name != "String":
-                raise lib.TypeException("'__repr__' must return 'String' object")
-            return result.env.get("lit", LINE_FILE).literal
+            return result.literal
+            # if result.class_name != "String":
+            #     raise lib.TypeException("'__repr__' must return 'String' object")
+            # return result.env.get("lit", LINE_FILE).literal
         else:
             return "<{} at {}>".format(self.class_name, id_(self))
 
@@ -725,10 +733,11 @@ class ClassInstance(lib.SplObject, mem.EnvironmentCarrier):
     def __str__(self):
         if self.env.contains_key("__str__"):
             func: Function = self.env.get("__str__", LINE_FILE)
-            result: ClassInstance = call_function([], LINE_FILE, func, None)
-            if result.class_name != "String":
-                raise lib.TypeException("'__str__' must return 'String' object")
-            return result.env.get("lit", LINE_FILE).literal
+            result: lib.CharArray = call_function([], LINE_FILE, func, None)
+            # if result.class_name != "String":
+            #     raise lib.TypeException("'__str__' must return 'String' object")
+            # return result.env.get("lit", LINE_FILE).literal
+            return result.literal
         else:
             attr = self.env.attributes()
             # attr.pop("this")
@@ -778,9 +787,10 @@ class SPLBaseException(Exception):
 
 def to_chars(v="") -> lib.CharArray:
     if isinstance(v, ClassInstance):
-        return lib.CharArray(str(v))
+        ca = lib.CharArray(str(v))
     else:
-        return lib.CharArray(v)
+        ca = lib.CharArray(v)
+    return malloc(ca)
 
 
 def to_repr(v) -> lib.CharArray:
@@ -803,8 +813,13 @@ def malloc(v, length=None):
         raise lib.MemoryException("Cannot malloc a '{}' object".format(typeof(v)))
 
 
-def free(v):
+def free(env: Environment, v):
     if isinstance(v, lib.SplObject):
+        if isinstance(v, ClassInstance):
+            if v.env.contains_key("__free__"):
+                f = v.env.get("__free__", LINE_FILE)
+                call_function([], LINE_FILE, f, env)
+            v.free_inner()
         mem.MEMORY.free(v)
     else:
         raise lib.MemoryException("Cannot free a '{}' object".format(typeof(v)))
@@ -855,7 +870,7 @@ def typeof(obj) -> lib.CharArray:
     elif isinstance(obj, bool):
         return lib.CharArray("boolean")
     elif isinstance(obj, lib.NativeType):
-        return lib.CharArray(obj.type_name__())
+        return lib.CharArray(obj.__type_name__())
     else:
         t = type(obj)
         return lib.CharArray(t.__name__)
@@ -941,11 +956,11 @@ def dir_(env: Environment, obj):
     elif isinstance(obj, NativeFunction):
         for nt in lib.NativeType.__subclasses__():
             nt: lib.NativeType
-            if nt.type_name__() == obj.name:
+            if nt.__type_name__() == obj.name:
                 lst.extend(dir(nt))
     elif isinstance(obj, type) and issubclass(obj, lib.NativeType):
         for nt in lib.NativeType.__subclasses__():
-            if nt.type_name__() == obj.type_name__():
+            if nt.__type_name__() == obj.__type_name__():
                 lst.extend(dir(nt))
     else:
         raise lib.TypeException("No such type '{}'".format(typeof(obj)))
@@ -1048,7 +1063,7 @@ def _get_class_doc(clazz: Class) -> str:
             doc.append(", ")
         doc.pop()
     doc.append(":\n")
-    doc.append(clazz.doc.literal)
+    doc.append(clazz.doc)
     return "".join(doc)
 
 
@@ -1067,7 +1082,7 @@ def _get_func_title(func: Function, name="") -> str:
 
 
 def _get_func_doc(func: Function) -> str:
-    return func.doc.literal
+    return func.doc
 
 
 def _exec_line(line: str, path: str):
@@ -1562,6 +1577,7 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment, 
     if func.abstract:
         raise lib.AbstractMethodException("Abstract method is not callable, in '{}', at line {}."
                                           .format(lf[1], lf[0]))
+    mem.MEMORY.call()
 
     scope = FunctionEnvironment(func.outer_scope)
     params = func.params
@@ -1599,7 +1615,6 @@ def call_function(args: list, lf: tuple, func: Function, call_env: Environment, 
         raise lib.ArgumentException("Too many arguments for function at <{}>, in file '{}', at line {}"
                                     .format(func.id, lf[1], lf[0]))
 
-    mem.MEMORY.call()
     rtn = evaluate(func.body, scope)
     if exit_call:
         mem.MEMORY.exit_call()
@@ -1674,7 +1689,7 @@ def get_node_in_annotation(node: ast.AnnotationNode, env: Environment, ann_list:
         content = evaluate(node.args, env)
     else:
         content = None
-    ann = Annotation(lib.CharArray(node.name), content)
+    ann = Annotation(node.name, content)
     ann_list.append(ann)
     if isinstance(node.body, ast.AssignmentNode):
         if isinstance(node.body.right, ast.DefStmt) and node.body.level == ast.FUNC_DEFINE:
@@ -1764,7 +1779,7 @@ def native_arithmetic(left: lib.NativeType, right, symbol: str):
         return not isinstance(right, lib.NativeType) or id_(left) != id_(right)
     elif symbol == "instanceof":
         if isinstance(right, TypeObj):
-            return left.type_name__() == right.type.type_name__()
+            return left.__type_name__() == right.type.type_name__()
         else:
             return False
     elif symbol == "==":
@@ -1930,7 +1945,8 @@ def class_inheritance(cla: Class, env: Environment, scope: Environment):
             value = evaluate(assign_node.right, env)
             assignment(assign_node.left, value, scope, assign_node.level)
         else:
-            raise lib.SplException("Not an expression inside class body")
+            raise lib.SplException("Not an expression inside class body, in file '{}', at line {}"
+                                   .format(line.file, line.line_num))
             # evaluate(line, scope)
 
 
@@ -1977,7 +1993,7 @@ def native_types_attr_invoke(instance: lib.NativeType, node: ast.NameNode):
         return res
     except AttributeError:
         raise lib.AttributeException("'{}' object has no attribute '{}', in file '{}', at line {}"
-                                     .format(instance.type_name__(), name, node.file, node.line_num))
+                                     .format(instance.__type_name__(), name, node.file, node.line_num))
 
 
 def self_return(node):
@@ -1987,7 +2003,7 @@ def self_return(node):
 def eval_return(node: ast.Node, env: Environment):
     res = evaluate(node, env)
     # print(env.variables)
-    env.terminate(res)
+    env.terminate(res, (node.line_num, node.file))
     return res
 
 
@@ -2048,7 +2064,7 @@ def eval_lambda(node: ast.LambdaExpression, env: Environment):
     else:
         raise lib.TypeException("Unexpected argument syntax for lambda expression, in file '{}', at line {}"
                                 .format(node.file, node.line_num))
-    f: Function = Function(pairs, node.right, env, False, typ.Set(), "")
+    f: Function = Function(pairs, node.right, env, False, set(), "")
     f.file = node.file
     f.line_num = node.line_num
     return f
@@ -2133,7 +2149,7 @@ def eval_def(node: ast.DefStmt, env: Environment):
         pair = ParameterPair(name, value)
         params_lst.append(pair)
 
-    annotations = typ.Set()
+    annotations = set()
     for ann in node.annotations:
         annotations.add(ann)
     f = Function(params_lst, node.body, env, node.abstract, annotations, node.doc)
